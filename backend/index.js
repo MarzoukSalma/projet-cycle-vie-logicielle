@@ -2,6 +2,8 @@
 const express = require("express");
 const db = require("./models"); // Sequelize index.js
 const recipeRoutes = require("./routes/recipe.routes");
+const userRoutes = require("./routes/user.routes");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +18,7 @@ app.get("/", (req, res) => {
 
 // Routes pour recipes
 app.use("/api/recipes", recipeRoutes);
+app.use("/api/users", userRoutes);
 
 // Start server ONLY if DB connection works
 db.sequelize
@@ -29,3 +32,7 @@ db.sequelize
   .catch((err) => {
     console.error("❌ Unable to connect to the database:", err);
   });
+
+
+
+  

@@ -2,7 +2,6 @@
 const db = require("../models");
 const { Recipe } = db;
 
-// GET /api/recipes
 exports.getAllRecipes = async (req, res) => {
   try {
     const recipes = await Recipe.findAll({
@@ -33,7 +32,6 @@ exports.getRecipeById = async (req, res) => {
 };
 
 // POST /api/recipes
-// body: { userId, title, description, imageUrl, steps, prepTimeMinutes, cookTimeMinutes, totalTimeMinutes }
 exports.createRecipe = async (req, res) => {
   try {
     const {
@@ -68,7 +66,7 @@ exports.createRecipe = async (req, res) => {
     return res.status(201).json(newRecipe);
   } catch (err) {
     console.error("Error creating recipe:", err);
-   return res.status(500).json({
+   return res.status(400).json({
     message: "Error creating recipe",
     error: err.message,      // 👈 add this
   });
