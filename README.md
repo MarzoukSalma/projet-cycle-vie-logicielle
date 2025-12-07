@@ -7,6 +7,6 @@
 
 ## 🛠️ Stack Technique
 
-* **Frontend** : React.js / Next.js, Tailwind CSS
+* **Frontend** : React.js 
 * **Backend** : Node.js, Express
-* **Base de données** : PostgreSQL / MySQL (Sequelize/Prisma)
+* **Base de données** : PostgreSQL (Sequelize/Prisma)
