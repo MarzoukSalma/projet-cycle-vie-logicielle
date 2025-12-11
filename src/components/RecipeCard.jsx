@@ -1,4 +1,3 @@
-"use client"
 
 import { useState } from "react"
 import { Heart, MessageCircle, Share2, Bookmark } from "lucide-react"
