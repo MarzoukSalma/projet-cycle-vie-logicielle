@@ -74,6 +74,8 @@
   cursor: pointer;
   transition: background-color 0.2s;
   margin-bottom: 1rem;
+  /* Added for link styling */
+  text-decoration: none;
 }
 
 .create-recipe-btn:hover {

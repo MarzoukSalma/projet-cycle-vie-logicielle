@@ -16,10 +16,23 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Made author-info a clickable link */
 .author-info {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.author-info:hover {
+  opacity: 0.8;
+}
+
+.author-info:hover .author-name {
+  color: var(--primary);
 }
 
 .author-emoji {
@@ -35,6 +48,7 @@
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+  transition: color 0.2s;
 }
 
 .recipe-meta {
@@ -64,7 +78,8 @@
   transition: color 0.2s;
   display: flex;
   align-items: center;
-  font-size: 0;
+  gap: 0.25rem;
+  font-size: 0.85rem;
   padding: 0;
 }
 
@@ -76,8 +91,20 @@
   color: #ef4444;
 }
 
+.action-btn.active {
+  color: var(--primary);
+}
+
 .action-btn.bookmarked {
   color: var(--primary);
+}
+
+.bookmark-btn {
+  margin-left: auto;
+}
+
+.comment-count {
+  font-size: 0.85rem;
 }
 
 .recipe-info {
@@ -91,11 +118,178 @@
   margin: 0 0 0.5rem 0;
 }
 
+.recipe-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
 .recipe-description {
   font-size: 0.9rem;
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.5;
+}
+
+/* Added comments section styles */
+.comments-section {
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.comments-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.comment {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.comment:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.comment-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  margin-bottom: 0.25rem;
+}
+
+.comment-author:hover .comment-name {
+  color: var(--primary);
+}
+
+.comment-emoji {
+  font-size: 1rem;
+}
+
+.comment-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  transition: color 0.2s;
+}
+
+.comment-text {
+  margin: 0.25rem 0 0 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.comment-image {
+  margin: 0.5rem 0 0 1.5rem;
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.add-comment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.comment-image-preview {
+  position: relative;
+  display: inline-block;
+  width: fit-content;
+}
+
+.comment-image-preview img {
+  max-width: 150px;
+  max-height: 100px;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  color: var(--surface);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.image-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--background);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.image-upload-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.comment-input {
+  flex: 1;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  font-size: 0.9rem;
+  background: var(--background);
+  transition: all 0.2s;
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.send-comment-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.send-comment-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.send-comment-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
@@ -105,7 +299,8 @@
 
   .recipe-header,
   .recipe-actions,
-  .recipe-info {
+  .recipe-info,
+  .comments-section {
     padding: 0.75rem;
   }
 }

@@ -1,18 +1,23 @@
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Home, Compass, User, Plus } from "lucide-react"
 import "../styles/Sidebar.css"
 
 function Sidebar() {
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isActive = (path) => location.pathname === path
+
+  const handleSignOut = () => {
+    navigate("/login")
+  }
 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="logo">
           <span className="logo-icon">🍽️</span>
-          <span className="logo-text">RecipeShare</span>
+          <span className="logo-text">RecipeMine</span>
         </div>
       </div>
 
@@ -31,13 +36,15 @@ function Sidebar() {
         </Link>
       </nav>
 
-      <button className="create-recipe-btn">
+      <Link to="/create-recipe" className="create-recipe-btn">
         <Plus size={20} />
         <span>Create Recipe</span>
-      </button>
+      </Link>
 
       <div className="sidebar-footer">
-        <button className="sign-out-btn">Sign Out</button>
+        <button className="sign-out-btn" onClick={handleSignOut}>
+          Sign Out
+        </button>
       </div>
     </aside>
   )
