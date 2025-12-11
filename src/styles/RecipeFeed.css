@@ -1,0 +1,15 @@
+.recipe-feed {
+  margin-top: 2rem;
+}
+
+.recipes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .recipes-list {
+    gap: 1.5rem;
+  }
+}
