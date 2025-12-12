@@ -1,10 +1,9 @@
 {
   "development": {
-
-    "username": "postgres",
-    "password": "mamapapa123",
-    "database": "recipeshare",
-    "host": "127.0.0.1",
+    "username": "app_user",
+    "password": "app_password",
+    "database": "app_db",
+    "host": "db",
     "dialect": "postgres"
   },
   "test": {

@@ -3,15 +3,21 @@ version: "3.9"
 services:
   db:
     image: postgres:16
+    container_name: app_db_container
     environment:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: app_password
       POSTGRES_DB: app_db
     ports:
       - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
 
   backend:
     build: ./backend
+    container_name: app_backend_container
+    env_file:
+      - ./backend/.env.docker
     ports:
       - "5000:5000"
     depends_on:
@@ -19,7 +25,11 @@ services:
 
   frontend:
     build: ./frontend
+    container_name: app_frontend_container
     ports:
       - "3000:5173"
     depends_on:
       - backend
+
+volumes:
+  db-data:
