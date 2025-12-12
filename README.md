@@ -9,4 +9,4 @@
 
 * **Frontend** : React.js 
 * **Backend** : Node.js, Express
-* **Base de données** : PostgreSQL (Sequelize/Prisma)
+* **Base de données** : PostgreSQL (Sequelize)
