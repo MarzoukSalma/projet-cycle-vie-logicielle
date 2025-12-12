@@ -5,7 +5,7 @@
 * ✅ **"J'ai essayé"** : Validez une recette en postant la photo de votre propre résultat.
 * 🔍 **Recherche Avancée** : Filtrez par ingrédients, difficulté ou temps de cuisson.
 
-## 🛠️ Stack Technique
+## 🛠️ Technique
 
 * **Frontend** : React.js 
 * **Backend** : Node.js, Express
