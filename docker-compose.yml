@@ -1,25 +1,43 @@
 version: "3.9"
-
 services:
   db:
     image: postgres:16
+    container_name: app_db_container
     environment:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: app_password
       POSTGRES_DB: app_db
     ports:
       - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d app_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: ./backend
+    container_name: app_backend_container
+    env_file:
+      - ./backend/.env.docker
+    environment:
+      - NODE_ENV=development  # ← Définit NODE_ENV à development
     ports:
       - "5000:5000"
     depends_on:
-      - db
-
+      db:
+        condition: service_healthy  # ← Attend que la DB soit healthy
+    restart: on-failure  # ← Redémarre si échec
+    
   frontend:
     build: ./frontend
+    container_name: app_frontend_container
     ports:
       - "3000:5173"
     depends_on:
       - backend
+
+volumes:
+  db-data:

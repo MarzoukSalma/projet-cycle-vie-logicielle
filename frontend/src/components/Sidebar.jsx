@@ -1,0 +1,88 @@
+
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Home, Compass, User, Plus, LogOut, Settings, ChevronDown } from "lucide-react"
+import { useState } from "react"
+import { useAuth } from "../contexts/AuthContext"
+import "../styles/Sidebar.css"
+
+function Sidebar() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const [showUserMenu, setShowUserMenu] = useState(false)
+
+  const isActive = (path) => location.pathname === path
+
+  const handleSignOut = () => {
+    logout()
+    setShowUserMenu(false)
+    navigate("/login")
+  }
+
+  const handleEditProfile = () => {
+    setShowUserMenu(false)
+    navigate("/settings")
+  }
+
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-header">
+        <div className="logo">
+          <span className="logo-icon">🍽️</span>
+          <span className="logo-text">RecipeMine</span>
+        </div>
+      </div>
+
+      <nav className="sidebar-nav">
+        <Link to="/" className={`nav-item ${isActive("/") ? "active" : ""}`}>
+          <Home size={24} />
+          <span>Feed</span>
+        </Link>
+        <Link to="/discover" className={`nav-item ${isActive("/discover") ? "active" : ""}`}>
+          <Compass size={24} />
+          <span>Discover</span>
+        </Link>
+        <Link to="/profile" className={`nav-item ${isActive("/profile") ? "active" : ""}`}>
+          <User size={24} />
+          <span>Profile</span>
+        </Link>
+      </nav>
+
+      {user ? (
+        <>
+          <Link to="/create-recipe" className="create-recipe-btn">
+            <Plus size={20} />
+            <span>Create Recipe</span>
+          </Link>
+
+          <div className="sidebar-footer">
+            <div className="user-menu-container">
+              <button className="user-menu-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
+                <div className="user-menu-info">
+                  <span className="user-emoji">😊</span>
+                  <span className="user-name">{user.name || "User"}</span>
+                </div>
+                <ChevronDown size={18} className={`chevron ${showUserMenu ? "open" : ""}`} />
+              </button>
+
+              {showUserMenu && (
+                <div className="user-dropdown">
+                  <button className="dropdown-item" onClick={handleEditProfile}>
+                    <Settings size={18} />
+                    <span>Edit Profile</span>
+                  </button>
+                  <button className="dropdown-item sign-out" onClick={handleSignOut}>
+                    <LogOut size={18} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      ) : null}
+    </aside>
+  )
+}
+
+export default Sidebar
