@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["node", "index.js"]
+CMD ["sh", "-c", "npx wait-port db:5432 && node index.js"]
