@@ -12,7 +12,11 @@ import RecipeDetailPage from "./pages/RecipeDetailPage"
 import EditProfilePage from "./pages/EditProfilePage"
 import "./App.css"
 
+console.log("[v0] App component loaded")
+
 function App() {
+  console.log("[v0] App component rendering")
+
   return (
     <AuthProvider>
       <Router>

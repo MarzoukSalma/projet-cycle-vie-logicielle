@@ -1,60 +1,9 @@
+
+
 import { useState, useEffect, useRef } from "react"
 import { Search, X, Filter, ChevronDown } from "lucide-react"
+import { fetchIngredients } from "../services/api"
 import "../styles/SearchBar.css"
-
-// Mock ingredients list (in a real app, this would come from your database/API)
-const ALL_INGREDIENTS = [
-  "Tomatoes",
-  "Onions",
-  "Garlic",
-  "Olive Oil",
-  "Salt",
-  "Pepper",
-  "Chicken",
-  "Beef",
-  "Pork",
-  "Fish",
-  "Shrimp",
-  "Eggs",
-  "Milk",
-  "Butter",
-  "Cheese",
-  "Parmesan",
-  "Mozzarella",
-  "Flour",
-  "Sugar",
-  "Baking Powder",
-  "Yeast",
-  "Rice",
-  "Pasta",
-  "Bread",
-  "Potatoes",
-  "Carrots",
-  "Celery",
-  "Bell Peppers",
-  "Mushrooms",
-  "Spinach",
-  "Lettuce",
-  "Cucumber",
-  "Avocado",
-  "Lemon",
-  "Lime",
-  "Basil",
-  "Oregano",
-  "Thyme",
-  "Rosemary",
-  "Cilantro",
-  "Parsley",
-  "Cumin",
-  "Paprika",
-  "Cinnamon",
-  "Vanilla",
-  "Honey",
-  "Maple Syrup",
-  "Soy Sauce",
-  "Vinegar",
-  "Mustard",
-]
 
 function SearchBar({ onSearch }) {
   const [searchMode, setSearchMode] = useState("name") // 'name' or 'ingredient'
@@ -63,12 +12,32 @@ function SearchBar({ onSearch }) {
   const [showIngredientDropdown, setShowIngredientDropdown] = useState(false)
   const [ingredientFilter, setIngredientFilter] = useState("")
   const [showModeDropdown, setShowModeDropdown] = useState(false)
+  const [allIngredients, setAllIngredients] = useState([])
+  const [isLoadingIngredients, setIsLoadingIngredients] = useState(false)
 
   const dropdownRef = useRef(null)
   const modeDropdownRef = useRef(null)
 
+  useEffect(() => {
+    const loadIngredients = async () => {
+      try {
+        setIsLoadingIngredients(true)
+        const ingredients = await fetchIngredients()
+        // Extract ingredient names from database objects
+        setAllIngredients(ingredients.map((ing) => ing.name))
+      } catch (error) {
+        console.error("Failed to load ingredients:", error)
+        setAllIngredients([])
+      } finally {
+        setIsLoadingIngredients(false)
+      }
+    }
+
+    loadIngredients()
+  }, [])
+
   // Filter ingredients based on input
-  const filteredIngredients = ALL_INGREDIENTS.filter(
+  const filteredIngredients = allIngredients.filter(
     (ing) => ing.toLowerCase().includes(ingredientFilter.toLowerCase()) && !selectedIngredients.includes(ing),
   )
 
@@ -193,6 +162,7 @@ function SearchBar({ onSearch }) {
                 }}
                 onFocus={() => setShowIngredientDropdown(true)}
                 className="ingredient-input"
+                disabled={isLoadingIngredients}
               />
             </div>
 

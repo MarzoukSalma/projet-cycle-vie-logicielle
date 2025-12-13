@@ -1,6 +1,9 @@
+
+
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Plus, X, Clock, Users, ChefHat, ImageIcon } from "lucide-react"
+import { createRecipe } from "../services/api"
 import "../styles/CreateRecipe.css"
 
 const DIFFICULTY_OPTIONS = ["Easy", "Medium", "Hard", "Expert"]
@@ -19,7 +22,7 @@ function CreateRecipePage() {
     prepTime: "",
     cookTime: "",
     servings: "",
-    ingredients: [{ name: "", amount: "", unit: "" }],
+    ingredients: [{ name: "", quantity: "" }],
     instructions: [""],
     tags: [],
   })
@@ -55,7 +58,7 @@ function CreateRecipePage() {
   const addIngredient = () => {
     setFormData((prev) => ({
       ...prev,
-      ingredients: [...prev.ingredients, { name: "", amount: "", unit: "" }],
+      ingredients: [...prev.ingredients, { name: "", quantity: "" }],
     }))
   }
 
@@ -110,9 +113,6 @@ function CreateRecipePage() {
     const newErrors = {}
     if (!formData.title.trim()) newErrors.title = "Title is required"
     if (!formData.description.trim()) newErrors.description = "Description is required"
-    if (!formData.category) newErrors.category = "Category is required"
-    if (!formData.difficulty) newErrors.difficulty = "Difficulty is required"
-    if (!formData.servings) newErrors.servings = "Servings is required"
 
     const hasValidIngredient = formData.ingredients.some((ing) => ing.name.trim())
     if (!hasValidIngredient) newErrors.ingredients = "At least one ingredient is required"
@@ -129,11 +129,34 @@ function CreateRecipePage() {
     if (!validateForm()) return
 
     setIsSubmitting(true)
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const recipeData = {
+        title: formData.title,
+        description: formData.description,
+        imageUrl: previewImage, // TODO: Upload image to storage service
+        steps: JSON.stringify(formData.instructions.filter((i) => i.trim())),
+        prepTimeMinutes: formData.prepTime ? Number.parseInt(formData.prepTime) : null,
+        cookTimeMinutes: formData.cookTime ? Number.parseInt(formData.cookTime) : null,
+        totalTimeMinutes:
+          formData.prepTime && formData.cookTime
+            ? Number.parseInt(formData.prepTime) + Number.parseInt(formData.cookTime)
+            : null,
+        ingredients: formData.ingredients
+          .filter((ing) => ing.name.trim())
+          .map((ing) => ({
+            name: ing.name,
+            quantity: ing.quantity,
+          })),
+      }
+
+      const newRecipe = await createRecipe(recipeData)
+      navigate(`/recipe/${newRecipe.id}`)
+    } catch (err) {
+      console.error("Failed to create recipe:", err)
+      setErrors({ submit: "Failed to create recipe. Please try again." })
+    } finally {
       setIsSubmitting(false)
-      navigate("/")
-    }, 1500)
+    }
   }
 
   return (
@@ -144,6 +167,8 @@ function CreateRecipePage() {
       </div>
 
       <form className="recipe-form" onSubmit={handleSubmit}>
+        {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
+
         <div className="form-section">
           <h2>Basic Information</h2>
 
@@ -196,46 +221,6 @@ function CreateRecipePage() {
             {errors.description && <span className="error-message">{errors.description}</span>}
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="category">Category</label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className={errors.category ? "error" : ""}
-              >
-                <option value="">Select category</option>
-                {CATEGORY_OPTIONS.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              {errors.category && <span className="error-message">{errors.category}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="difficulty">Difficulty</label>
-              <select
-                id="difficulty"
-                name="difficulty"
-                value={formData.difficulty}
-                onChange={handleChange}
-                className={errors.difficulty ? "error" : ""}
-              >
-                <option value="">Select difficulty</option>
-                {DIFFICULTY_OPTIONS.map((diff) => (
-                  <option key={diff} value={diff}>
-                    {diff}
-                  </option>
-                ))}
-              </select>
-              {errors.difficulty && <span className="error-message">{errors.difficulty}</span>}
-            </div>
-          </div>
-
           <div className="form-row three-cols">
             <div className="form-group">
               <label htmlFor="prepTime">
@@ -279,9 +264,7 @@ function CreateRecipePage() {
                 placeholder="4"
                 value={formData.servings}
                 onChange={handleChange}
-                className={errors.servings ? "error" : ""}
               />
-              {errors.servings && <span className="error-message">{errors.servings}</span>}
             </div>
           </div>
         </div>
@@ -295,17 +278,11 @@ function CreateRecipePage() {
               <div key={index} className="ingredient-row">
                 <input
                   type="text"
-                  placeholder="Amount"
-                  value={ingredient.amount}
-                  onChange={(e) => handleIngredientChange(index, "amount", e.target.value)}
-                  className="amount-input"
-                />
-                <input
-                  type="text"
-                  placeholder="Unit (cups, tbsp...)"
-                  value={ingredient.unit}
-                  onChange={(e) => handleIngredientChange(index, "unit", e.target.value)}
-                  className="unit-input"
+                  placeholder="Quantity (2 cups, 1 tbsp, etc.)"
+                  value={ingredient.quantity}
+                  onChange={(e) => handleIngredientChange(index, "quantity", e.target.value)}
+                  className="quantity-input"
+                  style={{ flex: 1 }}
                 />
                 <input
                   type="text"
@@ -313,6 +290,7 @@ function CreateRecipePage() {
                   value={ingredient.name}
                   onChange={(e) => handleIngredientChange(index, "name", e.target.value)}
                   className="name-input"
+                  style={{ flex: 2 }}
                 />
                 <button
                   type="button"
@@ -362,32 +340,6 @@ function CreateRecipePage() {
             <Plus size={18} />
             Add Step
           </button>
-        </div>
-
-        <div className="form-section">
-          <h2>Tags</h2>
-          <p className="section-description">Add tags to help others find your recipe</p>
-
-          <div className="tags-input-container">
-            <div className="tags-list">
-              {formData.tags.map((tag) => (
-                <span key={tag} className="tag">
-                  {tag}
-                  <button type="button" onClick={() => removeTag(tag)}>
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <input
-              type="text"
-              placeholder="Type a tag and press Enter"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={handleAddTag}
-              className="tag-input"
-            />
-          </div>
         </div>
 
         <div className="form-actions">

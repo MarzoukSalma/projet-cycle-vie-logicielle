@@ -5,9 +5,13 @@ const express = require("express");
 const db = require("./models"); // Sequelize index.js
 const recipeRoutes = require("./routes/recipe.routes");
 const userRoutes = require("./routes/user.routes");
+const cors = require("cors");
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.use(cors()); // 🔥 allow all origins (dev mode)
 
 // Middleware pour lire JSON
 app.use(express.json());
