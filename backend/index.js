@@ -5,7 +5,9 @@ const express = require("express");
 const db = require("./models"); // Sequelize index.js
 const recipeRoutes = require("./routes/recipe.routes");
 const userRoutes = require("./routes/user.routes");
+const cors = require("cors");
 
+app.use(cors()); // 🔥 allow all origins (dev mode)
 const app = express();
 const PORT = process.env.PORT || 5000;
 
