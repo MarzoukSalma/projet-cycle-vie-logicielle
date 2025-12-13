@@ -1,12 +1,13 @@
 // server.js
+require("dotenv").config();
+
 const express = require("express");
 const db = require("./models"); // Sequelize index.js
 const recipeRoutes = require("./routes/recipe.routes");
 const userRoutes = require("./routes/user.routes");
-require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware pour lire JSON
 app.use(express.json());

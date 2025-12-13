@@ -34,8 +34,8 @@ exports.getRecipeById = async (req, res) => {
 // POST /api/recipes
 exports.createRecipe = async (req, res) => {
   try {
+  const  userId = req.user.id;
     const {
-      userId,
       title,
       description,
       imageUrl,
@@ -93,5 +93,77 @@ exports.likeRecipe = async (req, res) => {
   } catch (err) {
     console.error("Error liking recipe:", err);
     return res.status(500).json({ message: "Error liking recipe" });
+  }
+};
+// POST /api/recipes/:id/dislike
+exports.dislikeRecipe = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const recipe = await Recipe.findByPk(id);
+    if (!recipe) {
+      return res.status(404).json({ message: "Recipe not found" });
+    }
+
+    // Prevent negative likes
+    recipe.likesCount = Math.max((recipe.likesCount || 0) - 1, 0);
+
+    await recipe.save();
+
+    return res.json({
+      message: "Recipe disliked successfully",
+      likesCount: recipe.likesCount,
+    });
+  } catch (err) {
+    console.error("Error disliking recipe:", err);
+    return res.status(500).json({ message: "Error disliking recipe" });
+  }
+};
+
+exports.deleteRecipe = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    const recipe = await Recipe.findByPk(id);
+
+    if (!recipe) {
+      return res.status(404).json({ message: "Recipe not found" });
+    }
+
+    if (recipe.userId !== userId) {
+      return res.status(403).json({ message: "Not your recipe" });
+    }
+
+    await recipe.destroy();
+
+    return res.json({ message: "Recipe deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting recipe:", err);
+    return res.status(500).json({ message: "Error deleting recipe" });
+  }
+};
+
+
+
+// GET /api/recipes/my
+exports.getMyRecipes = async (req, res) => {
+  try {
+    const userId = req.user.id;   // 👈 logged-in user
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const recipes = await Recipe.findAll({
+      where: { userId },
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.json(recipes);
+  } catch (err) {
+    console.error("Error fetching user's recipes:", err);
+    return res.status(500).json({
+      message: "Error fetching user's recipes",
+    });
   }
 };

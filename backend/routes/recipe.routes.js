@@ -1,18 +1,25 @@
-// routes/recipe.routes.js
 const express = require("express");
 const router = express.Router();
-const recipeController = require("../controllers/recipe.controller.js");
+const recipeController = require("../controllers/recipe.controller");
+const { authenticateToken } = require("../middleware/auth"); // adjust path if needed
 
-// GET /api/recipes
+// PUBLIC
 router.get("/", recipeController.getAllRecipes);
 
-// GET /api/recipes/:id
+// IMPORTANT: place this before `/:id` so "my" is not interpreted as an id
+router.get("/my", authenticateToken, recipeController.getMyRecipes);
+
+// Get single recipe (public)
 router.get("/:id", recipeController.getRecipeById);
 
-// POST /api/recipes
-router.post("/", recipeController.createRecipe);
+// PROTECTED (require login)
+router.post("/", authenticateToken, recipeController.createRecipe);
 
-// POST /api/recipes/:id/like
-router.post("/:id/like", recipeController.likeRecipe);
+// Like / Dislike (logged users only)
+router.post("/:id/like", authenticateToken, recipeController.likeRecipe);
+router.post("/:id/dislike", authenticateToken, recipeController.dislikeRecipe);
+
+// Delete (only owner — controller checks ownership)
+router.delete("/:id", authenticateToken, recipeController.deleteRecipe);
 
 module.exports = router;

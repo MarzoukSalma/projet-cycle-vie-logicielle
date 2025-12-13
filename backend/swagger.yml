@@ -1,0 +1,316 @@
+openapi: 3.0.3
+
+info:
+  title: RecipeShare API
+  description: Backend API for RecipeShare application
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+
+    Recipe:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+        prepTimeMinutes:
+          type: integer
+        cookTimeMinutes:
+          type: integer
+        totalTimeMinutes:
+          type: integer
+        likesCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+security:
+  - BearerAuth: []
+
+paths:
+
+  # =======================
+  # AUTH / USERS
+  # =======================
+
+  /api/users/register:
+    post:
+      summary: Register new user
+      tags: [Users]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        201:
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: "#/components/schemas/User"
+        409:
+          description: Email or username already exists
+
+  /api/users/login:
+    post:
+      summary: Login user
+      tags: [Users]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: "#/components/schemas/User"
+        401:
+          description: Invalid credentials
+
+  /api/users/settings:
+    put:
+      summary: Update logged-in user settings
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                avatarUrl:
+                  type: string
+                bio:
+                  type: string
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        200:
+          description: User settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        401:
+          description: Unauthorized
+
+  # =======================
+  # RECIPES
+  # =======================
+
+  /api/recipes:
+    get:
+      summary: Get all recipes
+      tags: [Recipes]
+      security: []
+      responses:
+        200:
+          description: List of recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recipe"
+
+    post:
+      summary: Create a recipe
+      tags: [Recipes]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                imageUrl:
+                  type: string
+                steps:
+                  type: array
+                  items:
+                    type: string
+                prepTimeMinutes:
+                  type: integer
+                cookTimeMinutes:
+                  type: integer
+                totalTimeMinutes:
+                  type: integer
+      responses:
+        201:
+          description: Recipe created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recipe"
+
+  /api/recipes/my:
+    get:
+      summary: Get my recipes
+      tags: [Recipes]
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: User recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recipe"
+
+  /api/recipes/{id}:
+    get:
+      summary: Get recipe by ID
+      tags: [Recipes]
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Recipe details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recipe"
+        404:
+          description: Recipe not found
+
+    delete:
+      summary: Delete recipe (owner only)
+      tags: [Recipes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Recipe deleted
+        403:
+          description: Forbidden
+
+  /api/recipes/{id}/like:
+    post:
+      summary: Like a recipe
+      tags: [Recipes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Recipe liked
+
+  /api/recipes/{id}/dislike:
+    post:
+      summary: Dislike a recipe
+      tags: [Recipes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Recipe disliked
