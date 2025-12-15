@@ -1,101 +1,66 @@
 
+import { useNavigate } from "react-router-dom"
+import { Heart, Clock, ChefHat } from "lucide-react"
+import "../styles/RecipeCard.css"
 
-import { useState, useEffect } from "react"
-import RecipeCard from "./RecipeCard"
-import { fetchRecipes, likeRecipe, unlikeRecipe } from "../services/api"
-import "../styles/RecipeFeed.css"
+const RecipeCard = ({ recipe, onToggleLike }) => {
+  const navigate = useNavigate()
 
-console.log("[v0] RecipeFeed component loaded")
-
-function RecipeFeed() {
-  console.log("[v0] RecipeFeed rendering")
-  const [recipes, setRecipes] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    console.log("[v0] RecipeFeed useEffect running")
-    const loadRecipes = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        console.log("[v0] Fetching recipes...")
-        const data = await fetchRecipes({ limit: 10, sort: "createdAt", order: "DESC" })
-        console.log("[v0] Recipes fetched:", data)
-        setRecipes(data)
-      } catch (err) {
-        console.error("[v0] Failed to load recipes:", err)
-        setError("Failed to load recipes")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadRecipes()
-  }, [])
-
-  const toggleLike = async (recipeId) => {
-    const recipe = recipes.find((r) => r.id === recipeId)
-    if (!recipe) return
-
-    const isCurrentlyLiked = recipe.isLiked || false
-
-    try {
-      if (isCurrentlyLiked) {
-        await unlikeRecipe(recipeId)
-      } else {
-        await likeRecipe(recipeId)
-      }
-
-      // Update local state
-      setRecipes(
-        recipes.map((r) =>
-          r.id === recipeId
-            ? {
-                ...r,
-                isLiked: !isCurrentlyLiked,
-                likesCount: isCurrentlyLiked ? r.likesCount - 1 : r.likesCount + 1,
-              }
-            : r,
-        ),
-      )
-    } catch (err) {
-      console.error("Failed to toggle like:", err)
-    }
+  const handleCardClick = () => {
+    navigate(`/recipe/${recipe.id}`, { state: { recipe } })
   }
 
-  console.log("[v0] RecipeFeed state - isLoading:", isLoading, "error:", error, "recipes count:", recipes.length)
-
-  if (isLoading) {
-    return (
-      <section className="recipe-feed">
-        <h2 className="section-title">Latest Recipes</h2>
-        <div className="loading-state">Loading recipes...</div>
-      </section>
-    )
-  }
-
-  if (error) {
-    return (
-      <section className="recipe-feed">
-        <h2 className="section-title">Latest Recipes</h2>
-        <div className="error-state">{error}</div>
-      </section>
-    )
+  const handleLikeClick = (e) => {
+    e.stopPropagation()
+    if (onToggleLike) {
+      onToggleLike(recipe.id)
+    }
   }
 
   return (
-    <section className="recipe-feed">
-      <h2 className="section-title">Latest Recipes</h2>
-      <div className="recipes-list">
-        {recipes.length > 0 ? (
-          recipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} onToggleLike={toggleLike} />)
-        ) : (
-          <div className="empty-state">No recipes found</div>
-        )}
+    <article className="recipe-card" onClick={handleCardClick}>
+      <div className="recipe-image-container">
+        <img
+          src={recipe.imageUrl || "/placeholder-recipe.jpg"}
+          alt={recipe.title}
+          className="recipe-image"
+          onError={(e) => {
+            e.target.src = "/placeholder-recipe.jpg"
+          }}
+        />
+        <button
+          className={`like-button ${recipe.isLiked ? "liked" : ""}`}
+          onClick={handleLikeClick}
+          aria-label={recipe.isLiked ? "Unlike recipe" : "Like recipe"}
+        >
+          <Heart size={20} fill={recipe.isLiked ? "currentColor" : "none"} />
+        </button>
       </div>
-    </section>
+
+      <div className="recipe-content">
+        <h3 className="recipe-title">{recipe.title}</h3>
+        <p className="recipe-description">
+          {recipe.description?.substring(0, 120)}
+          {recipe.description?.length > 120 ? "..." : ""}
+        </p>
+
+        <div className="recipe-meta">
+          <div className="meta-item">
+            <Clock size={16} />
+            <span>{recipe.totalTimeMinutes || recipe.cookTimeMinutes || 0} min</span>
+          </div>
+          <div className="meta-item">
+            <ChefHat size={16} />
+            <span>{recipe.userName || "Anonymous"}</span>
+          </div>
+          <div className="meta-item">
+            <Heart size={16} />
+            <span>{recipe.likesCount || 0}</span>
+          </div>
+        </div>
+      </div>
+    </article>
   )
 }
 
-export default RecipeFeed
+export default RecipeCard

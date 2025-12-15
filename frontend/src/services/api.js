@@ -9,6 +9,42 @@ const getAuthHeaders = () => {
   }
 }
 
+export const loginUser = async (email, password) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || "Failed to login")
+    }
+    return await response.json()
+  } catch (error) {
+    console.error("Error logging in:", error)
+    throw error
+  }
+}
+
+export const registerUser = async (username, email, password) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, password }),
+    })
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || "Failed to register")
+    }
+    return await response.json()
+  } catch (error) {
+    console.error("Error registering:", error)
+    throw error
+  }
+}
+
 export const getCurrentUser = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/users/me`, {

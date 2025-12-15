@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
+import { loginUser } from "../services/api"
 import "../styles/Auth.css"
 
 function LoginPage() {
@@ -44,17 +45,21 @@ function LoginPage() {
     if (!validateForm()) return
 
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      login({
-        id: "current-user",
-        name: "John Doe",
-        email: formData.email,
-        avatar: "/diverse-user-avatars.png",
-      })
-      setIsLoading(false)
+    try {
+      const response = await loginUser(formData.email, formData.password)
+
+      // Store the token
+      localStorage.setItem("authToken", response.token)
+
+      // Update auth context with user data
+      login(response.user)
+
       navigate("/")
-    }, 1000)
+    } catch (error) {
+      setErrors({ general: error.message || "Login failed. Please try again." })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -70,6 +75,12 @@ function LoginPage() {
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
+          {errors.general && (
+            <div className="error-message" style={{ marginBottom: "1rem", textAlign: "center" }}>
+              {errors.general}
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <div className="input-wrapper">

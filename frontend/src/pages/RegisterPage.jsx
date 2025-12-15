@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
+import { registerUser } from "../services/api"
 import "../styles/Auth.css"
 
 function RegisterPage() {
@@ -55,11 +56,16 @@ function RegisterPage() {
     if (!validateForm()) return
 
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await registerUser(formData.fullName, formData.email, formData.password)
+
+      // Navigate to login after successful registration
+      navigate("/login", { state: { message: "Registration successful! Please login." } })
+    } catch (error) {
+      setErrors({ general: error.message || "Registration failed. Please try again." })
+    } finally {
       setIsLoading(false)
-      navigate("/login")
-    }, 1000)
+    }
   }
 
   return (
@@ -75,6 +81,12 @@ function RegisterPage() {
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
+          {errors.general && (
+            <div className="error-message" style={{ marginBottom: "1rem", textAlign: "center" }}>
+              {errors.general}
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="fullName">Full Name</label>
             <div className="input-wrapper">
