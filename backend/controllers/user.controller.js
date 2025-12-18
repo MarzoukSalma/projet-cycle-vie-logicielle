@@ -1,5 +1,5 @@
 const db = require("../models");
-const { User } = db;
+const { Recipe, Ingredient, RecipeIngredient ,User } = db;
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -164,3 +164,59 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+exports.getVisitedUserProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByPk(id, {
+      attributes: ["id", "username", "email", "bio", "avatarUrl"]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+//GET /api/recipes/user/:id
+exports.getVisitedUserRecipes = async (req, res) => {
+  try {
+    const { id: userId } = req.params;
+
+    const recipes = await Recipe.findAll({
+      where: { userId },
+      include: [
+        {
+          model: Ingredient,
+          as: "ingredients",
+          attributes: ["id", "name"],
+          through: { attributes: ["quantity"] },
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    const totalRecipes = recipes.length;
+
+    const totalLikes = recipes.reduce(
+      (sum, recipe) => sum + (recipe.likesCount || 0),
+      0
+    );
+
+    return res.json({
+      totalRecipes,
+      totalLikes,
+      recipes,
+    });
+  } catch (err) {
+    console.error("Error fetching visited user recipes:", err);
+    return res.status(500).json({
+      message: "Error fetching user recipes",
+    });
+  }
+};

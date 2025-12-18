@@ -2,10 +2,7 @@
 const db = require("../models");
 const { Recipe, Ingredient, RecipeIngredient } = db;
 
-/**
- * GET /api/recipes
- * Get all recipes with ingredients
- */
+// GET /api/recipes
 exports.getAllRecipes = async (req, res) => {
   try {
     const recipes = await Recipe.findAll({
@@ -27,9 +24,7 @@ exports.getAllRecipes = async (req, res) => {
   }
 };
 
-/**
- * GET /api/recipes/:id
- */
+//GET /api/recipes/:id
 exports.getRecipeById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -56,10 +51,7 @@ exports.getRecipeById = async (req, res) => {
   }
 };
 
-/**
- * POST /api/recipes
- * Create recipe + auto-create ingredients if not exist
- */
+//POST /api/recipes
 exports.createRecipe = async (req, res) => {
   const transaction = await db.sequelize.transaction();
 
@@ -146,9 +138,7 @@ exports.createRecipe = async (req, res) => {
   }
 };
 
-/**
- * POST /api/recipes/:id/like
- */
+// POST /api/recipes/:id/like
 exports.likeRecipe = async (req, res) => {
   try {
     const { id } = req.params;
@@ -171,9 +161,7 @@ exports.likeRecipe = async (req, res) => {
   }
 };
 
-/**
- * POST /api/recipes/:id/dislike
- */
+//POST /api/recipes/:id/dislike
 exports.dislikeRecipe = async (req, res) => {
   try {
     const { id } = req.params;
@@ -196,9 +184,8 @@ exports.dislikeRecipe = async (req, res) => {
   }
 };
 
-/**
- * DELETE /api/recipes/:id
- */
+// DELETE /api/recipes/:id
+
 exports.deleteRecipe = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -222,9 +209,7 @@ exports.deleteRecipe = async (req, res) => {
   }
 };
 
-/**
- * GET /api/recipes/my
- */
+//GET /api/recipes/my
 exports.getMyRecipes = async (req, res) => {
   try {
     const userId = req.user.id;
