@@ -12,8 +12,6 @@ jobs:
       image: node:20         # Docker avec Node.js
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
+      
       - name: Test
         run: echo "test vrai"
