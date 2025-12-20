@@ -1,19 +1,19 @@
-name: workfolw-test
+name: workflow-test
 
 on:
   push:
-      branches:
-            -test
+    branches:
+      - develop   # branche qui déclenche le workflow
 
 jobs:
-    runs-on: ubuntu-latest  # runner Linux, même si tu es sur Windows
+  example-job:           # nom du job
+    runs-on: ubuntu-latest   # runner Linux
     container:
-      image: node:20         # image Docker avec Node.js préinstallé
+      image: node:20         # Docker avec Node.js
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-
-        -name: test 
+      - name: Test
         run: echo "test vrai"
