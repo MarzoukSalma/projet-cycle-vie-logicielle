@@ -1,0 +1,19 @@
+name: workfolw-test
+
+on:
+  push:
+      branches:
+            -test
+
+jobs:
+    runs-on: ubuntu-latest  # runner Linux, même si tu es sur Windows
+    container:
+      image: node:20         # image Docker avec Node.js préinstallé
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+
+        -name: test 
+        run: echo "test vrai"
