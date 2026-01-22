@@ -20,6 +20,9 @@ router.post("/", authenticateToken, recipeController.createRecipe);
 router.post("/:id/like", authenticateToken, recipeController.likeRecipe);
 router.post("/:id/dislike", authenticateToken, recipeController.dislikeRecipe);
 
+// Update recipe (only owner — controller checks ownership)
+router.put("/:id", authenticateToken, recipeController.updateRecipe);
+
 // Delete (only owner — controller checks ownership)
 router.delete("/:id", authenticateToken, recipeController.deleteRecipe);
 

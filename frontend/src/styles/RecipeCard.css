@@ -50,6 +50,13 @@
   margin: 0;
   transition: color 0.2s;
 }
+.author-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 
 .recipe-meta {
   font-size: 0.8rem;
@@ -164,6 +171,14 @@
   color: inherit;
   margin-bottom: 0.25rem;
 }
+.comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 0.5rem;
+}
+
 
 .comment-author:hover .comment-name {
   color: var(--primary);
@@ -290,6 +305,20 @@
 .send-comment-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Added styles for loading and empty states */
+.loading-comments,
+.no-comments,
+.login-prompt {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.login-prompt p {
+  margin: 0;
 }
 
 @media (max-width: 768px) {

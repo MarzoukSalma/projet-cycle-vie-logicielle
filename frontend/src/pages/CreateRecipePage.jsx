@@ -1,5 +1,4 @@
 
-
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Plus, X, Clock, Users, ChefHat, ImageIcon } from "lucide-react"
@@ -41,9 +40,46 @@ function CreateRecipePage() {
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setErrors({ ...errors, image: "Image must be less than 10MB" })
+        return
+      }
+
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setPreviewImage(reader.result)
+      reader.onload = (event) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement("canvas")
+          const MAX_WIDTH = 800
+          const MAX_HEIGHT = 800
+
+          let width = img.width
+          let height = img.height
+
+          // Calculate new dimensions while maintaining aspect ratio
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width
+              width = MAX_WIDTH
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height
+              height = MAX_HEIGHT
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+
+          const ctx = canvas.getContext("2d")
+          ctx.drawImage(img, 0, 0, width, height)
+
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6)
+          console.log("[v0] Compressed image size:", Math.round(compressedBase64.length / 1024), "KB")
+          setPreviewImage(compressedBase64)
+        }
+        img.src = event.target.result
       }
       reader.readAsDataURL(file)
     }
@@ -133,7 +169,7 @@ function CreateRecipePage() {
       const recipeData = {
         title: formData.title,
         description: formData.description,
-        imageUrl: previewImage, // TODO: Upload image to storage service
+        imageUrl: previewImage,
         steps: JSON.stringify(formData.instructions.filter((i) => i.trim())),
         prepTimeMinutes: formData.prepTime ? Number.parseInt(formData.prepTime) : null,
         cookTimeMinutes: formData.cookTime ? Number.parseInt(formData.cookTime) : null,
@@ -144,16 +180,18 @@ function CreateRecipePage() {
         ingredients: formData.ingredients
           .filter((ing) => ing.name.trim())
           .map((ing) => ({
-            name: ing.name,
-            quantity: ing.quantity,
+            name: ing.name.trim(),
+            quantity: ing.quantity.trim(),
           })),
       }
 
+      console.log("[v0] Creating recipe with data size:", JSON.stringify(recipeData).length, "bytes")
       const newRecipe = await createRecipe(recipeData)
+      console.log("[v0] Recipe created successfully:", newRecipe)
       navigate(`/recipe/${newRecipe.id}`)
     } catch (err) {
       console.error("Failed to create recipe:", err)
-      setErrors({ submit: "Failed to create recipe. Please try again." })
+      setErrors({ submit: `Failed to create recipe: ${err.message || "Please try again."}` })
     } finally {
       setIsSubmitting(false)
     }
@@ -180,11 +218,12 @@ function CreateRecipePage() {
                 <div className="upload-placeholder">
                   <ImageIcon size={48} />
                   <span>Click to upload recipe image</span>
-                  <span className="upload-hint">JPG, PNG up to 5MB</span>
+                  <span className="upload-hint">JPG, PNG up to 10MB (will be compressed)</span>
                 </div>
               )}
               <input type="file" accept="image/*" onChange={handleImageChange} hidden />
             </label>
+            {errors.image && <span className="error-message">{errors.image}</span>}
             {previewImage && (
               <button type="button" className="remove-image-btn" onClick={() => setPreviewImage(null)}>
                 <X size={16} />

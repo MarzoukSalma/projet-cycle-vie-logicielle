@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     avatarUrl: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true,
     },
     bio: {

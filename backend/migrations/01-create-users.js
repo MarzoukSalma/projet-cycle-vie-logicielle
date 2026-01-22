@@ -24,7 +24,7 @@ module.exports = {
         allowNull: false,
       },
       avatarUrl: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       bio: {

@@ -1,84 +1,97 @@
 
-
-import { useState, useRef, useEffect } from "react"
-import { useLocation, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, Heart, MessageCircle, Share2, Bookmark, Clock, Send } from "lucide-react"
-import { getRecipeById, likeRecipe, unlikeRecipe, getRecipeTries, createRecipeTry } from "../services/api"
+import { useState, useEffect } from "react"
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom"
+import { ArrowLeft, Heart, MessageCircle, Share2, Bookmark, Clock, Send, ImageIcon, X, Trash2, Edit } from "lucide-react"
+import { getRecipeById, likeRecipe, unlikeRecipe, getRecipeTries, createRecipeTry, deleteRecipe, deleteRecipeTry, updateRecipe } from "../services/api"
+import { useAuth } from "../contexts/AuthContext"
 import "../styles/RecipeDetail.css"
 
 function RecipeDetailPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { recipeId } = useParams()
-  const commentInputRef = useRef(null)
+  const { user } = useAuth()
 
-  const [recipe, setRecipe] = useState(location.state?.recipe || null)
+  const [recipe, setRecipe] = useState(null)  // ← Toujours null au départ
   const [isLiked, setIsLiked] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [likes, setLikes] = useState(0)
-  const [showComments, setShowComments] = useState(false)
-  const [newComment, setNewComment] = useState("")
-  const [comments, setComments] = useState([])
-  const [isLoading, setIsLoading] = useState(!location.state?.recipe)
-  const [isLoadingComments, setIsLoadingComments] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)  // ← Toujours true au départ
   const [error, setError] = useState(null)
 
+  const [showComments, setShowComments] = useState(false)
+  const [comments, setComments] = useState([])
+  const [newComment, setNewComment] = useState("")
+  const [commentImage, setCommentImage] = useState(null)
+  const [commentImagePreview, setCommentImagePreview] = useState(null)
+  const [isLoadingComments, setIsLoadingComments] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // ✅ SOLUTION: TOUJOURS charger les données complètes depuis l'API
   useEffect(() => {
     const loadRecipe = async () => {
-      if (recipe) {
-        setIsLiked(recipe.isLiked || false)
-        setLikes(recipe.likesCount || 0)
-        return
-      }
-
       try {
         setIsLoading(true)
         setError(null)
+        
+        // Toujours faire l'appel API pour avoir les données complètes
         const data = await getRecipeById(recipeId)
+        
         setRecipe(data)
         setIsLiked(data.isLiked || false)
         setLikes(data.likesCount || 0)
       } catch (err) {
-        console.error("Failed to load recipe:", err)
+        console.error("❌ Failed to load recipe:", err)
         setError("Failed to load recipe")
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadRecipe()
-  }, [recipeId, recipe])
+    if (recipeId) {
+      loadRecipe()
+    }
+  }, [recipeId])  // ← Seulement recipeId dans les dépendances
 
+  // Load comment count on component mount
   useEffect(() => {
-    const loadComments = async () => {
-      if (!showComments || !recipeId) return
-
-      try {
-        setIsLoadingComments(true)
-        const tries = await getRecipeTries(recipeId)
-        // Transform RecipeTries to comment format
-        setComments(
-          tries.map((tryItem) => ({
-            id: tryItem.id,
-            author: tryItem.User?.username || "Unknown",
-            avatar: tryItem.User?.avatarUrl || "👤",
-            text: tryItem.commentText,
-            imageUrl: tryItem.imageUrl,
-            timestamp: new Date(tryItem.createdAt).toLocaleDateString(),
-            userId: tryItem.userId,
-          })),
-        )
-      } catch (err) {
-        console.error("Failed to load comments:", err)
-      } finally {
-        setIsLoadingComments(false)
+    const loadCommentCount = async () => {
+      if (recipeId) {
+        try {
+          const tries = await getRecipeTries(recipeId)
+          setComments(tries)
+        } catch (error) {
+          console.error("Failed to load comment count:", error)
+        }
       }
     }
+    loadCommentCount()
+  }, [recipeId])
 
-    loadComments()
+  // Load full comments when user clicks to expand
+  useEffect(() => {
+    const loadFullComments = async () => {
+      if (showComments && recipeId) {
+        setIsLoadingComments(true)
+        try {
+          const tries = await getRecipeTries(recipeId)
+          setComments(tries)
+        } catch (error) {
+          console.error("Failed to load comments:", error)
+        } finally {
+          setIsLoadingComments(false)
+        }
+      }
+    }
+    loadFullComments()
   }, [showComments, recipeId])
 
   const handleLike = async () => {
+    if (!user) {
+      alert("Please log in to like recipes")
+      return
+    }
+
     try {
       if (isLiked) {
         await unlikeRecipe(recipeId)
@@ -94,37 +107,128 @@ function RecipeDetailPage() {
     }
   }
 
-  const handleCommentClick = () => {
-    setShowComments(true)
-    setTimeout(() => {
-      commentInputRef.current?.focus()
-    }, 100)
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      try {
+        const compressedImage = await compressImage(file)
+        setCommentImage(compressedImage)
+        setCommentImagePreview(compressedImage)
+      } catch (error) {
+        console.error("Error processing image:", error)
+      }
+    }
   }
 
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault()
-    if (!newComment.trim()) return
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (event) => {
+        const img = new Image()
+        img.src = event.target.result
+        img.onload = () => {
+          const canvas = document.createElement("canvas")
+          const MAX_WIDTH = 800
+          const MAX_HEIGHT = 800
+          let width = img.width
+          let height = img.height
 
-    try {
-      const newTry = await createRecipeTry(recipeId, {
-        commentText: newComment,
-      })
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width
+              width = MAX_WIDTH
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height
+              height = MAX_HEIGHT
+            }
+          }
 
-      // Add to local state
-      const comment = {
-        id: newTry.id,
-        author: newTry.User?.username || "You",
-        avatar: newTry.User?.avatarUrl || "😋",
-        text: newTry.commentText,
-        imageUrl: newTry.imageUrl,
-        timestamp: "Just now",
-        userId: newTry.userId,
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext("2d")
+          ctx.drawImage(img, 0, 0, width, height)
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6)
+          resolve(compressedBase64)
+        }
+        img.onerror = reject
       }
-      setComments([comment, ...comments])
-      setNewComment("")
-    } catch (err) {
-      console.error("Failed to post comment:", err)
+      reader.onerror = reject
+    })
+  }
+
+  const removeCommentImage = () => {
+    setCommentImage(null)
+    setCommentImagePreview(null)
+  }
+
+  const handleAddComment = async () => {
+    if (!user) {
+      alert("Please log in to comment")
+      return
     }
+
+    if (newComment.trim() || commentImage) {
+      try {
+        const commentData = {
+          commentText: newComment.trim(),
+          imageUrl: commentImage || null,
+        }
+
+        const newTry = await createRecipeTry(recipeId, commentData)
+        setComments([newTry, ...comments])
+        setNewComment("")
+        setCommentImage(null)
+        setCommentImagePreview(null)
+      } catch (error) {
+        console.error("Failed to post comment:", error)
+        alert("Failed to post comment. Please try again.")
+      }
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleAddComment()
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!user || recipe.userId !== user.id) {
+      alert("You can only delete your own recipes")
+      return
+    }
+
+    if (window.confirm("Are you sure you want to delete this recipe? This action cannot be undone.")) {
+      setIsDeleting(true)
+      try {
+        await deleteRecipe(recipeId)
+        navigate("/")
+      } catch (err) {
+        console.error("Failed to delete recipe:", err)
+        alert("Failed to delete recipe. Please try again.")
+        setIsDeleting(false)
+      }
+    }
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    if (window.confirm("Are you sure you want to delete this comment?")) {
+      try {
+        await deleteRecipeTry(recipeId, commentId)
+        setComments(comments.filter((c) => c.id !== commentId))
+      } catch (err) {
+        console.error("Failed to delete comment:", err)
+        alert("Failed to delete comment. Please try again.")
+      }
+    }
+  }
+
+  const handleEditRecipe = () => {
+    navigate(`/recipe/${recipeId}/edit`, { state: { recipe } })
   }
 
   if (isLoading) {
@@ -152,7 +256,6 @@ function RecipeDetailPage() {
     try {
       steps = JSON.parse(recipe.steps)
     } catch {
-      // If not JSON, treat as plain text and split by newlines
       steps = recipe.steps.split("\n").filter((s) => s.trim())
     }
   }
@@ -173,9 +276,14 @@ function RecipeDetailPage() {
         <div className="recipe-detail-overlay">
           <h1 className="recipe-detail-title">{recipe.title}</h1>
           <div className="recipe-detail-author">
-            <span className="author-emoji-large">{recipe.User?.avatarUrl || "👤"}</span>
-            <span className="author-name-large">{recipe.User?.username || "Unknown"}</span>
-          </div>
+  <img
+    src={recipe.user?.avatarUrl || "/placeholder-avatar.svg"}
+    alt={recipe.user?.username || "User avatar"}
+    className="author-avatar-large"
+  />
+  <span className="author-name-large">{recipe.user?.username || "Unknown"}</span>
+</div>
+
         </div>
       </div>
 
@@ -185,7 +293,10 @@ function RecipeDetailPage() {
             <Heart size={24} fill={isLiked ? "currentColor" : "none"} />
             <span>{likes} likes</span>
           </button>
-          <button className="detail-action-btn" onClick={handleCommentClick}>
+          <button
+            className={`detail-action-btn ${showComments ? "active" : ""}`}
+            onClick={() => setShowComments(!showComments)}
+          >
             <MessageCircle size={24} />
             <span>
               {comments.length} {comments.length === 1 ? "comment" : "comments"}
@@ -202,10 +313,30 @@ function RecipeDetailPage() {
             <Bookmark size={24} fill={isBookmarked ? "currentColor" : "none"} />
             <span>Save</span>
           </button>
+          {user && recipe.userId === user.id && (
+            <>
+              <button
+                className="detail-action-btn edit-btn"
+                onClick={handleEditRecipe}
+                title="Edit this recipe"
+              >
+                <Edit size={24} />
+                <span>Edit</span>
+              </button>
+              <button
+                className="detail-action-btn delete-btn"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                title="Delete this recipe"
+              >
+                <Trash2 size={24} />
+                <span>{isDeleting ? "Deleting..." : "Delete"}</span>
+              </button>
+            </>
+          )}
         </div>
 
         <div className="recipe-meta-info">
-          {/* TODO: Add difficulty to database schema or remove */}
           <div className="meta-item">
             <Clock size={20} />
             <span>{duration}</span>
@@ -221,10 +352,15 @@ function RecipeDetailPage() {
           <section className="recipe-section">
             <h2>Ingredients</h2>
             <ul className="ingredients-list">
-              {recipe.RecipeIngredients.map((ri) => (
-                <li key={ri.id} className="ingredient-item">
-                  {ri.quantity && <span className="ingredient-amount">{ri.quantity}</span>}
-                  <span className="ingredient-name">{ri.Ingredient?.name || "Unknown"}</span>
+              {recipe.RecipeIngredients.map((item, index) => (
+                <li key={item.id || index} className="ingredient-item">
+                  <span className="ingredient-amount">
+                        {item.quantity || "N/A"}    
+                  </span>
+                  <span className="ingredient-name">
+                    {item.Ingredient?.name || "Unknown"}
+                 </span>
+                   
                 </li>
               ))}
             </ul>
@@ -246,51 +382,92 @@ function RecipeDetailPage() {
         )}
 
         {showComments && (
-          <section className="recipe-section comments-section">
-            <h2>Comments ({comments.length})</h2>
-
-            <form onSubmit={handleCommentSubmit} className="comment-form">
-              <input
-                ref={commentInputRef}
-                type="text"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
-                className="comment-input"
-              />
-              <button type="submit" className="comment-submit-btn" disabled={!newComment.trim()}>
-                <Send size={20} />
-              </button>
-            </form>
-
-            {isLoadingComments ? (
-              <div className="loading-state">Loading comments...</div>
-            ) : (
-              <div className="comments-list">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="comment-item">
-                    <div className="comment-avatar">
-                      {comment.avatar.startsWith("http") ? (
-                        <img src={comment.avatar || "/placeholder.svg"} alt={comment.author} />
-                      ) : (
-                        comment.avatar
+          <div className="comments-section-detail">
+            <h3>Comments</h3>
+            <div className="comments-list">
+              {isLoadingComments ? (
+                <p className="loading-comments">Loading comments...</p>
+              ) : comments.length === 0 ? (
+                <p className="no-comments">No comments yet. Be the first to comment!</p>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="comment">
+                    <div className="comment-header">
+                      <Link to={`/profile/${comment.user?.id || comment.userId}`} className="comment-author">
+                        <img
+                          src={comment.user?.avatarUrl || "/placeholder-avatar.svg"}
+                          alt={comment.user?.username || "User avatar"}
+                          className="comment-avatar"
+                        />
+                        <span className="comment-name">{comment.user?.username || "Unknown"}</span>
+                      </Link>
+                      {user && user.id === comment.userId && (
+                        <button
+                          className="comment-delete-btn"
+                          onClick={() => handleDeleteComment(comment.id)}
+                          title="Delete comment"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       )}
                     </div>
-                    <div className="comment-content">
-                      <div className="comment-header">
-                        <span className="comment-author">{comment.author}</span>
-                        <span className="comment-timestamp">{comment.timestamp}</span>
-                      </div>
-                      <p className="comment-text">{comment.text}</p>
-                      {comment.imageUrl && (
-                        <img src={comment.imageUrl || "/placeholder.svg"} alt="User's try" className="comment-image" />
-                      )}
-                    </div>
+
+                    {comment.commentText && <p className="comment-text">{comment.commentText}</p>}
+                    {comment.imageUrl && (
+                      <img
+                        src={comment.imageUrl || "/placeholder.svg"}
+                        alt="Comment attachment"
+                        className="comment-image"
+                      />
+                    )}
                   </div>
-                ))}
+                ))
+              )}
+            </div>
+
+            {user ? (
+              <div className="add-comment">
+                {commentImagePreview && (
+                  <div className="comment-image-preview">
+                    <img src={commentImagePreview || "/placeholder.svg"} alt="Preview" />
+                    <button className="remove-image-btn" onClick={removeCommentImage}>
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+                <div className="comment-input-row">
+                  <label className="image-upload-btn">
+                    <ImageIcon size={20} />
+                    <input type="file" accept="image/*" onChange={handleImageUpload} hidden />
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Add a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="comment-input"
+                  />
+                  <button
+                    className="send-comment-btn"
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim() && !commentImage}
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="login-prompt">
+                <p>
+                  <a href="/login" style={{ color: "var(--primary)", textDecoration: "underline" }}>
+                    Log in
+                  </a>{" "}
+                  to add a comment
+                </p>
               </div>
             )}
-          </section>
+          </div>
         )}
       </div>
     </div>

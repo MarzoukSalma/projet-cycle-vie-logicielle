@@ -1,6 +1,8 @@
+
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react"
+import { forgotPassword } from "../services/api"
 import "../styles/Auth.css"
 
 function ForgotPasswordPage() {
@@ -21,11 +23,16 @@ function ForgotPasswordPage() {
     }
 
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
+    setError("")
+
+    try {
+      await forgotPassword(email)
       setIsSubmitted(true)
-    }, 1000)
+    } catch (err) {
+      setError(err.message || "Failed to send reset email. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   if (isSubmitted) {
@@ -75,6 +82,12 @@ function ForgotPasswordPage() {
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
+          {error && (
+            <div className="error-message" style={{ marginBottom: "1rem", textAlign: "center" }}>
+              {error}
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <div className="input-wrapper">
@@ -91,7 +104,6 @@ function ForgotPasswordPage() {
                 className={error ? "error" : ""}
               />
             </div>
-            {error && <span className="error-message">{error}</span>}
           </div>
 
           <button type="submit" className="auth-btn" disabled={isLoading}>

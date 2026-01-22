@@ -1,15 +1,8 @@
 
-
 import { useState, useEffect } from "react"
 import SearchBar from "../components/SearchBar"
 import RecipeCard from "../components/RecipeCard"
-import {
-  fetchRecipes,
-  searchRecipesByName,
-  searchRecipesByIngredients,
-  likeRecipe,
-  unlikeRecipe,
-} from "../services/api"
+import { fetchRecipes, globalSearch, searchByIngredients, likeRecipe, unlikeRecipe } from "../services/api"
 import "../styles/Discover.css"
 
 function DiscoverPage() {
@@ -48,8 +41,10 @@ function DiscoverPage() {
 
       try {
         setIsSearching(true)
-        const results = await searchRecipesByName(searchData.query)
-        setSearchResults(results)
+        const data = await globalSearch(searchData.query)
+        const allRecipes = [...(data.recipes || []), ...(data.recipesWithIngredient || [])]
+        const uniqueRecipes = Array.from(new Map(allRecipes.map((r) => [r.id, r])).values())
+        setSearchResults(uniqueRecipes)
         setSearchInfo({ type: "name", query: searchData.query })
       } catch (err) {
         console.error("Search failed:", err)
@@ -67,8 +62,21 @@ function DiscoverPage() {
 
       try {
         setIsSearching(true)
-        const results = await searchRecipesByIngredients(searchData.ingredients)
-        setSearchResults(results)
+        // Search for recipes containing the selected ingredients
+        const data = await searchByIngredients(searchData.ingredients)
+        const recipesWithIngredients = data.recipesWithIngredient || []
+        
+        // Filter to get recipes that contain at least one of the selected ingredients
+        const filteredRecipes = recipesWithIngredients.filter((recipe) => {
+          if (!recipe.ingredients || recipe.ingredients.length === 0) return false
+          return recipe.ingredients.some((ing) =>
+            searchData.ingredients.some((selected) => 
+              selected.toLowerCase() === ing.name.toLowerCase()
+            ),
+          )
+        })
+
+        setSearchResults(filteredRecipes)
         setSearchInfo({ type: "ingredient", ingredients: searchData.ingredients })
       } catch (err) {
         console.error("Search failed:", err)
@@ -81,7 +89,6 @@ function DiscoverPage() {
   }
 
   const toggleLike = async (recipeId) => {
-    // Find the recipe in current display
     const currentList = searchResults !== null ? searchResults : recipes
     const recipe = currentList.find((r) => r.id === recipeId)
 
@@ -96,7 +103,6 @@ function DiscoverPage() {
         await likeRecipe(recipeId)
       }
 
-      // Update local state optimistically
       const updateRecipes = (list) =>
         list.map((r) =>
           r.id === recipeId

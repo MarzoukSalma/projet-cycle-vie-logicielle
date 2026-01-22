@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from "react"
 import RecipeCard from "./RecipeCard"
 import { fetchRecipes, likeRecipe, unlikeRecipe } from "../services/api"
@@ -15,7 +13,8 @@ function RecipeFeed() {
       try {
         setIsLoading(true)
         setError(null)
-        const data = await fetchRecipes({ limit: 10, sort: "createdAt", order: "DESC" })
+        const data = await fetchRecipes()
+        console.log("[v0] Loaded recipes:", data)
         setRecipes(data)
       } catch (err) {
         console.error("Failed to load recipes:", err)
@@ -34,27 +33,37 @@ function RecipeFeed() {
 
     const isCurrentlyLiked = recipe.isLiked || false
 
+    setRecipes(
+      recipes.map((r) =>
+        r.id === recipeId
+          ? {
+              ...r,
+              isLiked: !isCurrentlyLiked,
+              likesCount: isCurrentlyLiked ? (r.likesCount || 1) - 1 : (r.likesCount || 0) + 1,
+            }
+          : r,
+      ),
+    )
+
     try {
       if (isCurrentlyLiked) {
         await unlikeRecipe(recipeId)
       } else {
         await likeRecipe(recipeId)
       }
-
-      // Update local state
+    } catch (err) {
+      console.error("Failed to toggle like:", err)
       setRecipes(
         recipes.map((r) =>
           r.id === recipeId
             ? {
                 ...r,
-                isLiked: !isCurrentlyLiked,
-                likesCount: isCurrentlyLiked ? r.likesCount - 1 : r.likesCount + 1,
+                isLiked: isCurrentlyLiked,
+                likesCount: isCurrentlyLiked ? (r.likesCount || 0) + 1 : (r.likesCount || 1) - 1,
               }
             : r,
         ),
       )
-    } catch (err) {
-      console.error("Failed to toggle like:", err)
     }
   }
 

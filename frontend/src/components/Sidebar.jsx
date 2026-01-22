@@ -1,6 +1,7 @@
 
+
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { Home, Compass, User, Plus, LogOut, Settings, ChevronDown } from "lucide-react"
+import { Home, Compass, User, Plus, LogOut, Settings, ChevronDown, MessageCircle } from "lucide-react"
 import { useState } from "react"
 import { useAuth } from "../contexts/AuthContext"
 import "../styles/Sidebar.css"
@@ -21,7 +22,7 @@ function Sidebar() {
 
   const handleEditProfile = () => {
     setShowUserMenu(false)
-    navigate("/settings")
+    navigate("/edit-profile")
   }
 
   return (
@@ -42,6 +43,10 @@ function Sidebar() {
           <Compass size={24} />
           <span>Discover</span>
         </Link>
+        <Link to="/chat" className={`nav-item ${isActive("/chat") ? "active" : ""}`}>
+          <MessageCircle size={24} />
+          <span>Chat</span>
+        </Link>
         <Link to="/profile" className={`nav-item ${isActive("/profile") ? "active" : ""}`}>
           <User size={24} />
           <span>Profile</span>
@@ -59,8 +64,12 @@ function Sidebar() {
             <div className="user-menu-container">
               <button className="user-menu-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
                 <div className="user-menu-info">
-                  <span className="user-emoji">😊</span>
-                  <span className="user-name">{user.name || "User"}</span>
+                  <img
+  src={user.avatarUrl || "/placeholder-avatar.svg"}
+  alt={user.username || user.name || "User avatar"}
+  className="user-avatar"
+/>
+<span className="user-name">{user.username || user.name || "User"}</span>
                 </div>
                 <ChevronDown size={18} className={`chevron ${showUserMenu ? "open" : ""}`} />
               </button>

@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   db:
     image: postgres:16
@@ -16,15 +18,23 @@ services:
       - ./backend/.env
     ports:
       - "5000:5000"
+    volumes:
+      - ./backend:/app       # <- Monte ton code local
+      - /app/node_modules    # <- Pour ne pas écraser node_modules
     depends_on:
       - db
+    command: sh -c "npx wait-port db:5432 && nodemon index.js"  # <- nodemon pour hot-reload
 
   frontend:
     build: ./frontend
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend:/app      # <- Monte ton code local
+      - /app/node_modules    # <- Pour ne pas écraser node_modules
     depends_on:
       - backend
+    command: npm run dev -- --host 0.0.0.0 --port 5173
 
 volumes:
   pgdata:

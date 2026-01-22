@@ -28,7 +28,7 @@ module.exports = {
         allowNull: true,
       },
       imageUrl: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       steps: {

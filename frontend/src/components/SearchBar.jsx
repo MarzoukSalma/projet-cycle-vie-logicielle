@@ -2,17 +2,17 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Search, X, Filter, ChevronDown } from "lucide-react"
-import { fetchIngredients } from "../services/api"
+import { searchIngredients, fetchIngredients } from "../services/api"
 import "../styles/SearchBar.css"
 
 function SearchBar({ onSearch }) {
-  const [searchMode, setSearchMode] = useState("name") // 'name' or 'ingredient'
+  const [searchMode, setSearchMode] = useState("name")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedIngredients, setSelectedIngredients] = useState([])
   const [showIngredientDropdown, setShowIngredientDropdown] = useState(false)
   const [ingredientFilter, setIngredientFilter] = useState("")
   const [showModeDropdown, setShowModeDropdown] = useState(false)
-  const [allIngredients, setAllIngredients] = useState([])
+  const [filteredIngredients, setFilteredIngredients] = useState([])
   const [isLoadingIngredients, setIsLoadingIngredients] = useState(false)
 
   const dropdownRef = useRef(null)
@@ -20,42 +20,56 @@ function SearchBar({ onSearch }) {
 
   useEffect(() => {
     const loadIngredients = async () => {
+      // If no filter and dropdown is shown, load all ingredients
+      if (showIngredientDropdown && ingredientFilter.trim() === "") {
+        try {
+          setIsLoadingIngredients(true)
+          const allIngredients = await fetchIngredients()
+          const available = allIngredients.filter((ing) => !selectedIngredients.includes(ing.name))
+          setFilteredIngredients(available)
+        } catch (error) {
+          console.error("Failed to load all ingredients:", error)
+          setFilteredIngredients([])
+        } finally {
+          setIsLoadingIngredients(false)
+        }
+        return
+      }
+
+      // If there's a filter, search for specific ingredients
+      if (ingredientFilter.trim().length < 2) {
+        setFilteredIngredients([])
+        return
+      }
+
       try {
         setIsLoadingIngredients(true)
-        const ingredients = await fetchIngredients()
-        // Extract ingredient names from database objects
-        setAllIngredients(ingredients.map((ing) => ing.name))
+        const ingredients = await searchIngredients(ingredientFilter)
+        const available = ingredients.filter((ing) => !selectedIngredients.includes(ing.name))
+        setFilteredIngredients(available)
       } catch (error) {
         console.error("Failed to load ingredients:", error)
-        setAllIngredients([])
+        setFilteredIngredients([])
       } finally {
         setIsLoadingIngredients(false)
       }
     }
 
-    loadIngredients()
-  }, [])
-
-  // Filter ingredients based on input
-  const filteredIngredients = allIngredients.filter(
-    (ing) => ing.toLowerCase().includes(ingredientFilter.toLowerCase()) && !selectedIngredients.includes(ing),
-  )
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setShowIngredientDropdown(false)
+    const debounce = setTimeout(() => {
+      if (showIngredientDropdown) {
+        loadIngredients()
       }
-      if (modeDropdownRef.current && !modeDropdownRef.current.contains(e.target)) {
-        setShowModeDropdown(false)
-      }
+    }, 300)
+
+    return () => clearTimeout(debounce)
+  }, [ingredientFilter, selectedIngredients, showIngredientDropdown])
+
+  const handleSearch = (e) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
     }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
 
-  const handleSearch = () => {
     if (searchMode === "name") {
       onSearch?.({ type: "name", query: searchQuery })
     } else {
@@ -65,13 +79,15 @@ function SearchBar({ onSearch }) {
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
+      e.preventDefault()
       handleSearch()
     }
   }
 
   const addIngredient = (ingredient) => {
-    setSelectedIngredients((prev) => [...prev, ingredient])
+    setSelectedIngredients((prev) => [...prev, ingredient.name])
     setIngredientFilter("")
+    setShowIngredientDropdown(false)
   }
 
   const removeIngredient = (ingredient) => {
@@ -88,7 +104,7 @@ function SearchBar({ onSearch }) {
   return (
     <div className="search-bar-container">
       <div className="search-mode-selector" ref={modeDropdownRef}>
-        <button className="mode-toggle" onClick={() => setShowModeDropdown(!showModeDropdown)}>
+        <button type="button" className="mode-toggle" onClick={() => setShowModeDropdown(!showModeDropdown)}>
           <Filter size={18} />
           <span>{searchMode === "name" ? "By Name" : "By Ingredient"}</span>
           <ChevronDown size={16} />
@@ -97,6 +113,7 @@ function SearchBar({ onSearch }) {
         {showModeDropdown && (
           <div className="mode-dropdown">
             <button
+              type="button"
               className={`mode-option ${searchMode === "name" ? "active" : ""}`}
               onClick={() => {
                 setSearchMode("name")
@@ -108,6 +125,7 @@ function SearchBar({ onSearch }) {
               <span className="mode-description">Find recipes by title</span>
             </button>
             <button
+              type="button"
               className={`mode-option ${searchMode === "ingredient" ? "active" : ""}`}
               onClick={() => {
                 setSearchMode("ingredient")
@@ -134,7 +152,7 @@ function SearchBar({ onSearch }) {
               onKeyDown={handleKeyDown}
             />
             {searchQuery && (
-              <button className="clear-btn" onClick={clearSearch}>
+              <button type="button" className="clear-btn" onClick={clearSearch}>
                 <X size={18} />
               </button>
             )}
@@ -145,7 +163,7 @@ function SearchBar({ onSearch }) {
               {selectedIngredients.map((ing) => (
                 <span key={ing} className="ingredient-tag">
                   {ing}
-                  <button onClick={() => removeIngredient(ing)}>
+                  <button type="button" onClick={() => removeIngredient(ing)}>
                     <X size={14} />
                   </button>
                 </span>
@@ -153,7 +171,7 @@ function SearchBar({ onSearch }) {
               <input
                 type="text"
                 placeholder={
-                  selectedIngredients.length > 0 ? "Add more ingredients..." : "Type to search ingredients..."
+                  selectedIngredients.length > 0 ? "Add more ingredients..." : "Type to search or click to see all..."
                 }
                 value={ingredientFilter}
                 onChange={(e) => {
@@ -166,31 +184,40 @@ function SearchBar({ onSearch }) {
               />
             </div>
 
-            {showIngredientDropdown && filteredIngredients.length > 0 && (
+            {showIngredientDropdown && (filteredIngredients.length > 0 || isLoadingIngredients) && (
               <div className="ingredient-dropdown">
                 <div className="dropdown-header">
-                  <span>Available Ingredients</span>
+                  <span>{ingredientFilter ? "Search Results" : "All Ingredients"}</span>
                   <span className="count">{filteredIngredients.length}</span>
                 </div>
                 <div className="ingredient-list">
-                  {filteredIngredients.map((ing) => (
-                    <button key={ing} className="ingredient-option" onClick={() => addIngredient(ing)}>
-                      {ing}
-                    </button>
-                  ))}
+                  {isLoadingIngredients ? (
+                    <div className="loading-state">Loading ingredients...</div>
+                  ) : (
+                    filteredIngredients.map((ing) => (
+                      <button
+                        type="button"
+                        key={ing.id}
+                        className="ingredient-option"
+                        onClick={() => addIngredient(ing)}
+                      >
+                        {ing.name}
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
             )}
 
             {selectedIngredients.length > 0 && (
-              <button className="clear-btn" onClick={clearSearch}>
+              <button type="button" className="clear-btn" onClick={clearSearch}>
                 <X size={18} />
               </button>
             )}
           </div>
         )}
 
-        <button className="search-btn" onClick={handleSearch}>
+        <button type="button" className="search-btn" onClick={handleSearch}>
           <Search size={20} />
           Search
         </button>

@@ -6,40 +6,35 @@
 .profile-header {
   background: var(--surface);
   border-radius: 1rem;
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.profile-cover {
-  height: 180px;
-  overflow: hidden;
-}
-
-.cover-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .profile-info {
-  padding: 0 2rem 2rem;
+  padding: 2rem 2rem 2rem;
   position: relative;
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
 }
 
 .avatar-section {
   position: relative;
-  display: inline-block;
-  margin-top: -60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .profile-avatar {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  border: 4px solid var(--surface);
+  border: 4px solid white;
   object-fit: cover;
   background: var(--background);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .edit-avatar-btn {
@@ -64,7 +59,7 @@
 }
 
 .profile-details {
-  margin-top: 1rem;
+  flex: 1;
 }
 
 .profile-name-row {
@@ -278,6 +273,38 @@
   font-size: 0.875rem;
 }
 
+.recipe-delete-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.recipe-grid-item:hover .recipe-delete-btn {
+  opacity: 1;
+}
+
+.recipe-delete-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.recipe-delete-btn:active {
+  transform: scale(0.95);
+}
+
 .empty-state {
   grid-column: 1 / -1;
   display: flex;
@@ -294,23 +321,36 @@
   font-size: 1rem;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .profile-info {
-    padding: 0 1rem 1.5rem;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem 1rem;
+  }
+
+  .avatar-section {
+    margin-bottom: 1rem;
+  }
+
+  .profile-details {
+    width: 100%;
   }
 
   .profile-name-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
   }
 
   .profile-meta {
     flex-direction: column;
     gap: 0.5rem;
+    justify-content: center;
   }
 
   .profile-stats {
-    justify-content: space-around;
+    justify-content: center;
     width: 100%;
   }
 

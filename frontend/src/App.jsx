@@ -9,7 +9,9 @@ import LoginPage from "./pages/LoginPage"
 import RegisterPage from "./pages/RegisterPage"
 import ForgotPasswordPage from "./pages/ForgotPasswordPage"
 import RecipeDetailPage from "./pages/RecipeDetailPage"
+import EditRecipePage from "./pages/EditRecipePage"
 import EditProfilePage from "./pages/EditProfilePage"
+import ChatPage from "./pages/ChatPage"
 import "./App.css"
 
 function App() {
@@ -28,7 +30,9 @@ function App() {
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/create-recipe" element={<CreateRecipePage />} />
             <Route path="/recipe/:recipeId" element={<RecipeDetailPage />} />
+            <Route path="/recipe/:recipeId/edit" element={<EditRecipePage />} />
             <Route path="/edit-profile" element={<EditProfilePage />} />
+            <Route path="/chat" element={<ChatPage />} />
           </Route>
         </Routes>
       </Router>

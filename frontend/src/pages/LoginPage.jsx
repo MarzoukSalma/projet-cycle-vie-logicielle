@@ -1,5 +1,3 @@
-
-
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
@@ -48,14 +46,23 @@ function LoginPage() {
     try {
       const response = await loginUser(formData.email, formData.password)
 
-      // Store the token
-      localStorage.setItem("authToken", response.token)
+      console.log("✅ Login response:", response)
 
-      // Update auth context with user data
-      login(response.user)
+      // ✅ Validate response has both user and token
+      if (!response.token) {
+        throw new Error("No token received from server")
+      }
+
+      if (!response.user) {
+        throw new Error("No user data received from server")
+      }
+
+      // ✅ Pass BOTH user data AND token to login
+      login(response.user, response.token)
 
       navigate("/")
     } catch (error) {
+      console.error("❌ Login error:", error)
       setErrors({ general: error.message || "Login failed. Please try again." })
     } finally {
       setIsLoading(false)

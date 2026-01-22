@@ -120,6 +120,14 @@
 .user-emoji {
   font-size: 1.25rem;
 }
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 0.5rem;
+}
+
 
 .user-name {
   font-weight: 500;

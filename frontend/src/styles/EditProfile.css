@@ -64,64 +64,34 @@
 
 .image-uploads {
   position: relative;
-  margin-bottom: 80px;
-}
-
-.cover-image-section {
-  position: relative;
-  height: 200px;
-  background-color: #f3f4f6;
-}
-
-.cover-preview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.change-image-btn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  margin-bottom: 40px;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.change-image-btn:hover {
-  background-color: rgba(0, 0, 0, 0.8);
+  justify-content: center;
+  padding: 40px 20px 20px;
 }
 
 .avatar-section {
-  position: absolute;
-  bottom: -60px;
-  left: 30px;
+  position: relative;
+  display: inline-block;
 }
 
 .avatar-preview {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
-  border: 4px solid white;
+  border: 4px solid #f3f4f6;
   object-fit: cover;
   display: block;
+  background: #f3f4f6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.change-avatar-btn {
+.upload-avatar-btn {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: #10b981;
   color: white;
@@ -130,11 +100,17 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.change-avatar-btn:hover {
+.upload-avatar-btn:hover {
   background-color: #059669;
+  transform: scale(1.1);
+}
+
+.upload-avatar-btn:active {
+  transform: scale(0.95);
 }
 
 .form-fields {
@@ -195,18 +171,18 @@
     font-size: 20px;
   }
 
-  .cover-image-section {
-    height: 150px;
+  .image-uploads {
+    padding: 30px 20px 10px;
   }
 
   .avatar-preview {
-    width: 90px;
-    height: 90px;
+    width: 120px;
+    height: 120px;
   }
 
-  .avatar-section {
-    bottom: -45px;
-    left: 20px;
+  .upload-avatar-btn {
+    width: 36px;
+    height: 36px;
   }
 
   .form-fields {
