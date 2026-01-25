@@ -88,40 +88,66 @@ function DiscoverPage() {
     }
   }
 
-  const toggleLike = async (recipeId) => {
-    const currentList = searchResults !== null ? searchResults : recipes
-    const recipe = currentList.find((r) => r.id === recipeId)
+const toggleLike = async (recipeId, isCurrentlyLiked) => {
+  // 🔥 Optimistic update (instant UI feedback)
+  const optimisticUpdate = (list) =>
+    list.map((r) =>
+      r.id === recipeId
+        ? {
+            ...r,
+            likedByMe: !isCurrentlyLiked,
+            likesCount: r.likesCount + (isCurrentlyLiked ? -1 : 1),
+          }
+        : r,
+    )
 
-    if (!recipe) return
+  setRecipes((prev) => optimisticUpdate(prev))
+  if (searchResults) {
+    setSearchResults((prev) => optimisticUpdate(prev))
+  }
 
-    const isCurrentlyLiked = recipe.isLiked || false
+  try {
+    const responseData = isCurrentlyLiked
+      ? await unlikeRecipe(recipeId)
+      : await likeRecipe(recipeId)
 
-    try {
-      if (isCurrentlyLiked) {
-        await unlikeRecipe(recipeId)
-      } else {
-        await likeRecipe(recipeId)
-      }
+    // ✅ Sync with backend truth
+    const syncUpdate = (list) =>
+      list.map((r) =>
+        r.id === recipeId
+          ? {
+              ...r,
+              likedByMe: responseData.likedByMe,
+              likesCount: responseData.likesCount,
+            }
+          : r,
+      )
 
-      const updateRecipes = (list) =>
-        list.map((r) =>
-          r.id === recipeId
-            ? {
-                ...r,
-                isLiked: !isCurrentlyLiked,
-                likesCount: isCurrentlyLiked ? r.likesCount - 1 : r.likesCount + 1,
-              }
-            : r,
-        )
+    setRecipes((prev) => syncUpdate(prev))
+    if (searchResults) {
+      setSearchResults((prev) => syncUpdate(prev))
+    }
+  } catch (err) {
+    console.error("❌ Failed to toggle like:", err)
 
-      setRecipes(updateRecipes)
-      if (searchResults) {
-        setSearchResults(updateRecipes(searchResults))
-      }
-    } catch (err) {
-      console.error("Failed to toggle like:", err)
+    // 🔁 Rollback on error
+    const rollback = (list) =>
+      list.map((r) =>
+        r.id === recipeId
+          ? {
+              ...r,
+              likedByMe: isCurrentlyLiked,
+              likesCount: r.likesCount + (isCurrentlyLiked ? 1 : -1),
+            }
+          : r,
+      )
+
+    setRecipes((prev) => rollback(prev))
+    if (searchResults) {
+      setSearchResults((prev) => rollback(prev))
     }
   }
+}
 
   const displayRecipes = searchResults !== null ? searchResults : recipes
 

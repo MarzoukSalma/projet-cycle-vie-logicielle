@@ -3,15 +3,17 @@ const express = require("express");
 const router = express.Router();
 const recipeController = require("../controllers/recipe.controller");
 const { authenticateToken } = require("../middleware/auth"); // adjust path if needed
+const { optionalAuth } = require("../middleware/auth")
 
-// PUBLIC
-router.get("/", recipeController.getAllRecipes);
+
+
+router.get("/", optionalAuth, recipeController.getAllRecipes)
 
 // IMPORTANT: place this before `/:id` so "my" is not interpreted as an id
 router.get("/my", authenticateToken, recipeController.getMyRecipes);
 
 // Get single recipe (public)
-router.get("/:id", recipeController.getRecipeById);
+router.get("/:id",optionalAuth, recipeController.getRecipeById);
 
 // PROTECTED (require login)
 router.post("/", authenticateToken, recipeController.createRecipe);

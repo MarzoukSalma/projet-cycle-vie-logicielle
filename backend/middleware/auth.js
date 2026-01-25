@@ -66,22 +66,51 @@ const authenticateTokenOptional = async (req, res, next) => {
   }
 };
 
-// Middleware pour vérifier que l'utilisateur modifie ses propres données
+async function optionalAuth(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader) {
+      req.user = null
+      return next()
+    }
+
+    const [type, token] = authHeader.split(" ")
+    if (type !== "Bearer" || !token) {
+      req.user = null
+      return next()
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET)
+
+    const user = await User.findByPk(decoded.id, {
+      attributes: { exclude: ["passwordHash", "motDePasse"] },
+    })
+
+    req.user = user || null
+    next()
+  } catch {
+    // Invalid token → treat as anonymous
+    req.user = null
+    next()
+  }
+}
+
+// Ownership check (unchanged)
 const checkOwnership = (req, res, next) => {
-  const userId = req.user && req.user.id;
-  const resourceUserId = parseInt(req.params.userId || req.params.id, 10);
+  const userId = req.user?.id
+  const resourceUserId = req.params.userId || req.params.id
 
   if (!userId || userId !== resourceUserId) {
     return res.status(403).json({
-      message: "Vous ne pouvez modifier que vos propres données"
-    });
+      message: "Vous ne pouvez modifier que vos propres données",
+    })
   }
 
-  next();
-};
+  next()
+}
 
 module.exports = {
   authenticateToken,
-  authenticateTokenOptional,
-  checkOwnership
-};
+  optionalAuth,
+  checkOwnership,
+}

@@ -9,6 +9,7 @@ const getAuthHeaders = () => {
   }
 }
 
+
 // ✅ Helper pour gérer les erreurs d'authentification
 const handleAuthError = async (response) => {
   if (response.status === 401 || response.status === 403) {
@@ -31,7 +32,6 @@ const handleAuthError = async (response) => {
 }
 
 // ==================== USER ENDPOINTS ====================
-
 export const loginUser = async (email, password) => {
   try {
     const response = await fetch(`${API_BASE_URL}/users/login`, {
@@ -39,16 +39,24 @@ export const loginUser = async (email, password) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     })
+
     if (!response.ok) {
       const errorData = await response.json()
       throw new Error(errorData.message || "Failed to login")
     }
-    return await response.json()
+
+    const data = await response.json() // ✅ IMPORTANT
+
+    localStorage.setItem("authToken", data.token)
+    localStorage.setItem("user", JSON.stringify(data.user))
+
+    return data
   } catch (error) {
     console.error("Error logging in:", error)
     throw error
   }
 }
+
 
 export const registerUser = async (username, email, password) => {
   try {
@@ -57,16 +65,25 @@ export const registerUser = async (username, email, password) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password }),
     })
+
     if (!response.ok) {
       const errorData = await response.json()
       throw new Error(errorData.message || "Failed to register")
     }
-    return await response.json()
+
+    const data = await response.json() // ✅ IMPORTANT
+
+    // ✅ SAVE TOKEN + USER
+    localStorage.setItem("authToken", data.token)
+    localStorage.setItem("user", JSON.stringify(data.user))
+
+    return data
   } catch (error) {
     console.error("Error registering:", error)
     throw error
   }
 }
+
 
 export const updateUserSettings = async (userData) => {
   try {
@@ -177,7 +194,9 @@ export const getMyRecipes = async () => {
 
 export const getRecipeById = async (recipeId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}`)
+    const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}`, {
+      headers: getAuthHeaders(), // 🔥 THIS WAS MISSING
+    })
     if (!response.ok) throw new Error("Failed to fetch recipe")
     return await response.json()
   } catch (error) {
@@ -185,6 +204,7 @@ export const getRecipeById = async (recipeId) => {
     throw error
   }
 }
+
 
 export const createRecipe = async (recipeData) => {
   try {
@@ -237,32 +257,38 @@ export const deleteRecipe = async (recipeId) => {
 }
 
 export const likeRecipe = async (recipeId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}/like`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-    })
-    if (!response.ok) throw new Error("Failed to like recipe")
-    return await response.json()
-  } catch (error) {
-    console.error("Error liking recipe:", error)
-    throw error
+  const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}/like`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  })
+
+  const data = await response.json()
+
+  if (!response.ok && data.message !== "Recipe already liked") {
+    throw new Error(data.message || "Failed to like recipe")
   }
+
+  // ✅ ALWAYS return backend truth
+  return data
 }
 
+
+
 export const unlikeRecipe = async (recipeId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}/dislike`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-    })
-    if (!response.ok) throw new Error("Failed to dislike recipe")
-    return await response.json()
-  } catch (error) {
-    console.error("Error disliking recipe:", error)
-    throw error
+  const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}/dislike`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to dislike recipe")
   }
+
+  return data
 }
+
 
 // ==================== INGREDIENT ENDPOINTS ====================
 

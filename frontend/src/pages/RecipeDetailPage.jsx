@@ -38,8 +38,10 @@ function RecipeDetailPage() {
         const data = await getRecipeById(recipeId)
         
         setRecipe(data)
-        setIsLiked(data.isLiked || false)
-        setLikes(data.likesCount || 0)
+setIsLiked(data.likedByMe)
+setLikes(data.likesCount)
+
+
       } catch (err) {
         console.error("❌ Failed to load recipe:", err)
         setError("Failed to load recipe")
@@ -86,26 +88,34 @@ function RecipeDetailPage() {
     loadFullComments()
   }, [showComments, recipeId])
 
-  const handleLike = async () => {
-    if (!user) {
-      alert("Please log in to like recipes")
-      return
-    }
-
-    try {
-      if (isLiked) {
-        await unlikeRecipe(recipeId)
-        setIsLiked(false)
-        setLikes(likes - 1)
-      } else {
-        await likeRecipe(recipeId)
-        setIsLiked(true)
-        setLikes(likes + 1)
-      }
-    } catch (err) {
-      console.error("Failed to toggle like:", err)
-    }
+const handleLike = async () => {
+  if (!user) {
+    alert("Please log in to like recipes")
+    return
   }
+
+  try {
+    if (isLiked) {
+      const data = await unlikeRecipe(recipeId)
+
+      if (!data.notLikedYet) {
+        setIsLiked(false)
+        setLikes(data.likesCount)
+      }
+    } else {
+      const data = await likeRecipe(recipeId)
+
+      if (!data.alreadyLiked) {
+        setIsLiked(true)
+        setLikes(data.likesCount)
+      }
+    }
+  } catch (err) {
+    console.error("Failed to toggle like:", err)
+  }
+}
+
+
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0]

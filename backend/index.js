@@ -14,15 +14,14 @@ const cors = require("cors")
 const app = express()
 const PORT = process.env.PORT || 5000
 
-app.use(cors()) // 🔥 allow all origins (dev mode)
+app.use(cors()) 
 
 // Middleware pour lire JSON with increased limit
 app.use(express.json({ limit: "50mb" }))
 app.use(express.urlencoded({ limit: "50mb", extended: true }))
 
-// Simple route pour tester
 app.get("/", (req, res) => {
-  res.send("RecipeShare backend is running 👨‍🍳🔥")
+  res.send("RecipeShare backend is runninggg 👨‍🍳🔥")
 })
 
 // Routes pour recipes

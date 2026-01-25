@@ -17,8 +17,10 @@ function RecipeCard({ recipe, onToggleLike }) {
   const [commentImagePreview, setCommentImagePreview] = useState(null)
   const [isLoadingComments, setIsLoadingComments] = useState(false)
 
-  const likesCount = recipe.likesCount || 0
-  const isLiked = recipe.isLiked || false
+const likesCount = recipe.likesCount || 0
+const isLiked = recipe.likedByMe || false
+
+console.log("Recipe ID:", recipe.id, "likedByMe:", recipe.likedByMe, "isLiked:", isLiked) // 🔍 Debug line
 
   // Load comment count on component mount
   useEffect(() => {

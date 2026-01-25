@@ -1,9 +1,9 @@
 // controllers/recipe.controller.js
 const db = require("../models")
-const { Recipe, Ingredient, RecipeIngredient } = db
+const { Recipe, Ingredient, RecipeIngredient, RecipeLike } = db
 
 // Fonction helper pour transformer une recette
-const transformRecipe = (recipeJSON) => {
+const transformRecipe = (recipeJSON, likesCount = 0) => {
   return {
     id: recipeJSON.id,
     userId: recipeJSON.userId,
@@ -14,7 +14,7 @@ const transformRecipe = (recipeJSON) => {
     prepTimeMinutes: recipeJSON.prepTimeMinutes,
     cookTimeMinutes: recipeJSON.cookTimeMinutes,
     totalTimeMinutes: recipeJSON.totalTimeMinutes,
-    likesCount: recipeJSON.likesCount,
+    likesCount: likesCount, 
     createdAt: recipeJSON.createdAt,
     updatedAt: recipeJSON.updatedAt,
     user: recipeJSON.author,
@@ -33,6 +33,8 @@ const transformRecipe = (recipeJSON) => {
 // GET /api/recipes
 exports.getAllRecipes = async (req, res) => {
   try {
+    const userId = req.user?.id || null
+
     const recipes = await Recipe.findAll({
       include: [
         {
@@ -55,9 +57,41 @@ exports.getAllRecipes = async (req, res) => {
       order: [["createdAt", "DESC"]],
     })
 
-    const transformedRecipes = recipes.map((recipe) => {
+    // 🔥 Get liked recipes for this user (ONE QUERY)
+    let likedRecipeIds = new Set()
+
+    if (userId) {
+      const likes = await db.RecipeLike.findAll({
+        where: { userId },
+        attributes: ["recipeId"],
+      })
+
+      likedRecipeIds = new Set(likes.map(like => like.recipeId))
+    }
+
+    // 🔥 Get likes count for all recipes (ONE QUERY)
+    const likesCountMap = {}
+    const allLikes = await db.RecipeLike.findAll({
+      attributes: [
+        'recipeId',
+        [db.sequelize.fn('COUNT', db.sequelize.col('recipeId')), 'count']
+      ],
+      group: ['recipeId'],
+      raw: true
+    })
+
+    allLikes.forEach(like => {
+      likesCountMap[like.recipeId] = parseInt(like.count)
+    })
+
+    const transformedRecipes = recipes.map(recipe => {
       const recipeJSON = recipe.toJSON()
-      return transformRecipe(recipeJSON)
+      const likesCount = likesCountMap[recipeJSON.id] || 0
+
+      return {
+        ...transformRecipe(recipeJSON, likesCount),
+        likedByMe: userId ? likedRecipeIds.has(recipeJSON.id) : false,
+      }
     })
 
     return res.json(transformedRecipes)
@@ -67,10 +101,12 @@ exports.getAllRecipes = async (req, res) => {
   }
 }
 
+
 // GET /api/recipes/:id
 exports.getRecipeById = async (req, res) => {
   try {
     const { id } = req.params
+    const userId = req.user?.id || null
 
     const recipe = await Recipe.findByPk(id, {
       include: [
@@ -83,9 +119,7 @@ exports.getRecipeById = async (req, res) => {
           model: Ingredient,
           as: "ingredients",
           attributes: ["id", "name"],
-          through: {
-            attributes: ["quantity"],
-          },
+          through: { attributes: ["quantity"] },
         },
         {
           model: db.RecipeTry,
@@ -99,15 +133,38 @@ exports.getRecipeById = async (req, res) => {
       return res.status(404).json({ message: "Recipe not found" })
     }
 
-    const recipeJSON = recipe.toJSON()
-    const transformed = transformRecipe(recipeJSON)
+    // 🔥 Check if THIS user liked THIS recipe
+    let likedByMe = false
 
-    return res.json(transformed)
+    if (userId) {
+      const like = await db.RecipeLike.findOne({
+        where: {
+          userId,
+          recipeId: recipe.id,
+        },
+      })
+
+      likedByMe = !!like
+    }
+
+    // 🔥 Count likes for this recipe
+    const likesCount = await db.RecipeLike.count({
+      where: { recipeId: id },
+    })
+
+    const recipeJSON = recipe.toJSON()
+    const transformed = transformRecipe(recipeJSON, likesCount)
+
+    return res.json({
+      ...transformed,
+      likedByMe,
+    })
   } catch (err) {
     console.error("Error fetching recipe:", err)
     return res.status(500).json({ message: "Error fetching recipe" })
   }
 }
+
 
 // POST /api/recipes
 exports.createRecipe = async (req, res) => {
@@ -193,7 +250,7 @@ exports.createRecipe = async (req, res) => {
     })
 
     const recipeJSON = createdRecipe.toJSON()
-    const transformed = transformRecipe(recipeJSON)
+    const transformed = transformRecipe(recipeJSON, 0) // 🔥 New recipe has 0 likes
 
     return res.status(201).json(transformed)
   } catch (err) {
@@ -206,51 +263,90 @@ exports.createRecipe = async (req, res) => {
   }
 }
 
-// POST /api/recipes/:id/like
 exports.likeRecipe = async (req, res) => {
   try {
-    const { id } = req.params
+    const userId = req.user.id
+    const recipeId = req.params.id
 
-    const recipe = await Recipe.findByPk(id)
+    const recipe = await Recipe.findByPk(recipeId)
     if (!recipe) {
       return res.status(404).json({ message: "Recipe not found" })
     }
 
-    recipe.likesCount = (recipe.likesCount || 0) + 1
-    await recipe.save()
+    await db.RecipeLike.create({
+      userId,
+      recipeId,
+    })
+
+    const likesCount = await db.RecipeLike.count({
+      where: { recipeId },
+    })
 
     return res.json({
       message: "Recipe liked successfully",
-      likesCount: recipe.likesCount,
+      likesCount,
+      likedByMe: true,
     })
   } catch (err) {
+    if (err.name === "SequelizeUniqueConstraintError") {
+      const likesCount = await db.RecipeLike.count({
+        where: { recipeId: req.params.id },
+      })
+
+      return res.status(200).json({
+        message: "Recipe already liked",
+        likesCount,
+        likedByMe: true,
+      })
+    }
+
     console.error("Error liking recipe:", err)
     return res.status(500).json({ message: "Error liking recipe" })
   }
 }
 
+
 // POST /api/recipes/:id/dislike
 exports.dislikeRecipe = async (req, res) => {
   try {
-    const { id } = req.params
+    const userId = req.user.id
+    const recipeId = req.params.id
 
-    const recipe = await Recipe.findByPk(id)
-    if (!recipe) {
-      return res.status(404).json({ message: "Recipe not found" })
+    // Remove the like
+    const deleted = await db.RecipeLike.destroy({
+      where: { userId, recipeId },
+    })
+
+    // If the recipe was not liked, this is NOT a fatal error
+    if (!deleted) {
+      const likesCount = await db.RecipeLike.count({
+        where: { recipeId },
+      })
+
+      return res.status(200).json({
+        message: "Recipe not liked yet",
+        likesCount,
+        likedByMe: false,
+      })
     }
 
-    recipe.likesCount = Math.max((recipe.likesCount || 0) - 1, 0)
-    await recipe.save()
+    // Recount likes
+    const likesCount = await db.RecipeLike.count({
+      where: { recipeId },
+    })
 
     return res.json({
       message: "Recipe disliked successfully",
-      likesCount: recipe.likesCount,
+      likesCount,
+      likedByMe: false,
     })
   } catch (err) {
     console.error("Error disliking recipe:", err)
     return res.status(500).json({ message: "Error disliking recipe" })
   }
 }
+
+
 
 // PUT /api/recipes/:id
 exports.updateRecipe = async (req, res) => {
@@ -342,8 +438,13 @@ exports.updateRecipe = async (req, res) => {
       ],
     })
 
+    // 🔥 Count likes for this recipe
+    const likesCount = await db.RecipeLike.count({
+      where: { recipeId: id },
+    })
+
     const recipeJSON = updatedRecipe.toJSON()
-    const transformed = transformRecipe(recipeJSON)
+    const transformed = transformRecipe(recipeJSON, likesCount)
 
     return res.json(transformed)
   } catch (err) {
@@ -408,9 +509,30 @@ exports.getMyRecipes = async (req, res) => {
       order: [["createdAt", "DESC"]],
     })
 
+    // 🔥 Get likes count for user's recipes (ONE QUERY)
+    const recipeIds = recipes.map(r => r.id)
+    const likesCountMap = {}
+    
+    if (recipeIds.length > 0) {
+      const allLikes = await db.RecipeLike.findAll({
+        where: { recipeId: recipeIds },
+        attributes: [
+          'recipeId',
+          [db.sequelize.fn('COUNT', db.sequelize.col('recipeId')), 'count']
+        ],
+        group: ['recipeId'],
+        raw: true
+      })
+
+      allLikes.forEach(like => {
+        likesCountMap[like.recipeId] = parseInt(like.count)
+      })
+    }
+
     const transformedRecipes = recipes.map((recipe) => {
       const recipeJSON = recipe.toJSON()
-      return transformRecipe(recipeJSON)
+      const likesCount = likesCountMap[recipeJSON.id] || 0
+      return transformRecipe(recipeJSON, likesCount)
     })
 
     return res.json(transformedRecipes)
