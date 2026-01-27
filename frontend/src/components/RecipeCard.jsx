@@ -170,7 +170,8 @@ console.log("Recipe ID:", recipe.id, "likedByMe:", recipe.likedByMe, "isLiked:",
       alert("Please log in to like recipes")
       return
     }
-    onToggleLike(recipe.id)
+   onToggleLike(recipe.id, isLiked)
+
   }
 
   const totalTime = (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0)
