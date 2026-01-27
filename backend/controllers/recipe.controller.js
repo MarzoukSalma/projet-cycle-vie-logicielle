@@ -543,3 +543,21 @@ exports.getMyRecipes = async (req, res) => {
     })
   }
 }
+// GET /api/recipes/liked
+exports.getMyLikedRecipes = async (req, res) => {
+  try {
+    const userId = req.user.id
+
+    const likes = await RecipeLike.findAll({
+      where: { userId },
+      attributes: ["id", "recipeId", "createdAt"],
+    })
+
+    return res.json(likes)
+  } catch (err) {
+    console.error("Error fetching liked recipes:", err)
+    return res.status(500).json({
+      message: "Error fetching liked recipes",
+    })
+  }
+}

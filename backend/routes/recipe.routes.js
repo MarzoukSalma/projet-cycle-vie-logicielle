@@ -27,5 +27,7 @@ router.put("/:id", authenticateToken, recipeController.updateRecipe);
 
 // Delete (only owner — controller checks ownership)
 router.delete("/:id", authenticateToken, recipeController.deleteRecipe);
+router.get("/liked", authenticateToken, recipeController.getMyLikedRecipes)
+
 
 module.exports = router;
