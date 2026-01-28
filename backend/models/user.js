@@ -1,4 +1,3 @@
-// models/user.js
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define("User", {
     id: {
@@ -19,7 +18,17 @@ module.exports = (sequelize, DataTypes) => {
     },
     passwordHash: {
       type: DataTypes.STRING,
+      allowNull: true, // ✅ changed
+    },
+    firebaseUid: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true, // ✅ Google users
+    },
+    authProvider: {
+      type: DataTypes.ENUM("local", "google", "facebook"),
       allowNull: false,
+      defaultValue: "local",
     },
     avatarUrl: {
       type: DataTypes.TEXT,
@@ -29,12 +38,12 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-  });
+  })
 
   User.associate = (models) => {
-    User.hasMany(models.Recipe, { foreignKey: "userId", as: "recipes" });
-    User.hasMany(models.RecipeTry, { foreignKey: "userId", as: "tries" });
-  };
+    User.hasMany(models.Recipe, { foreignKey: "userId", as: "recipes" })
+    User.hasMany(models.RecipeTry, { foreignKey: "userId", as: "tries" })
+  }
 
-  return User;
-};
+  return User
+}
