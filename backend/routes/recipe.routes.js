@@ -10,6 +10,8 @@ const { optionalAuth } = require("../middleware/auth")
 router.get("/", optionalAuth, recipeController.getAllRecipes)
 
 // IMPORTANT: place this before `/:id` so "my" is not interpreted as an id
+router.get("/stories", optionalAuth, recipeController.getTopRecipesStories)
+
 router.get("/my", authenticateToken, recipeController.getMyRecipes);
 router.get("/liked", authenticateToken, recipeController.getMyLikedRecipes)
 
@@ -28,6 +30,5 @@ router.put("/:id", authenticateToken, recipeController.updateRecipe);
 
 // Delete (only owner — controller checks ownership)
 router.delete("/:id", authenticateToken, recipeController.deleteRecipe);
-
 
 module.exports = router;

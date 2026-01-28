@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
-import { Settings, Grid, Heart, Calendar, Edit2, Trash2 } from "lucide-react"
+import { Settings, Grid, Heart, Calendar, Trash2 } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
 import { getUserById, getUserRecipes, deleteRecipe, getMyLikedRecipes } from "../services/api"
+import Modal from "../components/Modal"
 import "../styles/Profile.css"
 
 function ProfilePage() {
@@ -11,7 +12,6 @@ function ProfilePage() {
   const { user: currentUser } = useAuth()
 
   const [activeTab, setActiveTab] = useState("recipes")
-  const [isFollowing, setIsFollowing] = useState(false)
   const [user, setUser] = useState(null)
   const [userStats, setUserStats] = useState({ totalRecipes: 0, totalLikes: 0 })
 
@@ -21,6 +21,8 @@ function ProfilePage() {
 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [recipeToDelete, setRecipeToDelete] = useState(null)
 
   const isOwnProfile = !userId || (currentUser && userId == currentUser.id)
 
@@ -96,15 +98,22 @@ function ProfilePage() {
 
   const handleDeleteRecipe = async (e, recipeId) => {
     e.stopPropagation()
-    if (!window.confirm("Are you sure you want to delete this recipe?")) return
+    setRecipeToDelete(recipeId)
+    setDeleteModalOpen(true)
+  }
 
+  const confirmDeleteRecipe = async () => {
     try {
-      await deleteRecipe(recipeId)
-      setMyRecipes((prev) => prev.filter((r) => r.id !== recipeId))
+      await deleteRecipe(recipeToDelete)
+      setMyRecipes((prev) => prev.filter((r) => r.id !== recipeToDelete))
       setUserStats((prev) => ({ ...prev, totalRecipes: Math.max(0, prev.totalRecipes - 1) }))
+      setDeleteModalOpen(false)
+      setRecipeToDelete(null)
     } catch (err) {
       console.error("Failed to delete recipe:", err)
       alert("Failed to delete recipe. Please try again.")
+      setDeleteModalOpen(false)
+      setRecipeToDelete(null)
     }
   }
 
@@ -125,128 +134,135 @@ function ProfilePage() {
   }
 
   return (
-    <div className="profile-page">
-      <div className="profile-header">
-        <div className="profile-info">
-          <div className="avatar-section">
-            <img
-              src={user.avatarUrl || "/placeholder.svg"}
-              alt={user.username}
-              className="profile-avatar"
-              onError={(e) => {
-                e.target.src = "/placeholder.svg"
-              }}
-            />
-            
-          </div>
-
-          <div className="profile-details">
-            <div className="profile-name-row">
-              <div>
-                <h1 className="profile-name">{user.username}</h1>
-                <p className="profile-username">@{user.username}</p>
-              </div>
-              {isOwnProfile ? (
-                <Link to="/edit-profile" className="edit-profile-btn">
-                  <Settings size={18} />
-                  Edit Profile
-                </Link>
-              ) : (
-                <button
-                  className={`follow-btn ${isFollowing ? "following" : ""}`}
-                  onClick={() => setIsFollowing(!isFollowing)}
-                >
-                  {isFollowing ? "Following" : "Follow"}
-                </button>
-              )}
-            </div>
-
-            {user.bio && <p className="profile-bio">{user.bio}</p>}
-
-            <div className="profile-meta">
-              <span className="meta-item">
-                <Calendar size={16} />
-                Joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-              </span>
-            </div>
-
-            <div className="profile-stats">
-              <div className="stat-item">
-                <span className="stat-value">{userStats.totalRecipes}</span>
-                <span className="stat-label">Recipes</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">{userStats.totalLikes}</span>
-                <span className="stat-label">Total Likes</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="profile-tabs">
-        <button
-          className={`tab-btn ${activeTab === "recipes" ? "active" : ""}`}
-          onClick={() => setActiveTab("recipes")}
-        >
-          <Grid size={18} />
-          Recipes
-        </button>
-
-        {isOwnProfile && (
-          <button
-            className={`tab-btn ${activeTab === "liked" ? "active" : ""}`}
-            onClick={() => setActiveTab("liked")}
-          >
-            <Heart size={18} />
-            Liked
-          </button>
-        )}
-      </div>
-
-      <div className="profile-recipes-grid">
-        {displayedRecipes.length > 0 ? (
-          displayedRecipes.map((recipe) => (
-            <div
-              key={recipe.id}
-              className="recipe-grid-item"
-              onClick={() => handleRecipeClick(recipe)}
-              style={{ cursor: "pointer", position: "relative" }}
-            >
+    <>
+      <Modal
+        isOpen={deleteModalOpen}
+        title="Delete Recipe"
+        message="Are you sure you want to delete this recipe? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteRecipe}
+        onCancel={() => {
+          setDeleteModalOpen(false)
+          setRecipeToDelete(null)
+        }}
+        isDangerous={true}
+      />
+      <div className="profile-page">
+        <div className="profile-header">
+          <div className="profile-info">
+            <div className="avatar-section">
               <img
-                src={recipe.imageUrl || "/placeholder.svg"}
-                alt={recipe.title}
+                src={user.avatarUrl || "/placeholder.svg"}
+                alt={user.username}
+                className="profile-avatar"
                 onError={(e) => {
                   e.target.src = "/placeholder.svg"
                 }}
               />
-              <div className="recipe-overlay">
-                <span className="recipe-title">{recipe.title}</span>
-                <span className="recipe-likes">
-                  <Heart size={16} fill="white" />
-                  {recipe.likesCount || 0}
+            </div>
+
+            <div className="profile-details">
+              <div className="profile-name-row">
+                <div>
+                  <h1 className="profile-name">{user.username}</h1>
+                  <p className="profile-username">@{user.username}</p>
+                </div>
+                {isOwnProfile && (
+                  <Link to="/edit-profile" className="edit-profile-btn">
+                    <Settings size={18} />
+                    Edit Profile
+                  </Link>
+                )}
+              </div>
+
+              {user.bio && <p className="profile-bio">{user.bio}</p>}
+
+              <div className="profile-meta">
+                <span className="meta-item">
+                  <Calendar size={16} />
+                  Joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </span>
               </div>
 
-              {isOwnProfile && activeTab === "recipes" && (
-                <button
-                  className="recipe-delete-btn"
-                  onClick={(e) => handleDeleteRecipe(e, recipe.id)}
-                  title="Delete recipe"
-                >
-                  <Trash2 size={18} />
-                </button>
-              )}
+              <div className="profile-stats">
+                <div className="stat-item">
+                  <span className="stat-value">{userStats.totalRecipes}</span>
+                  <span className="stat-label">Recipes</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">{userStats.totalLikes}</span>
+                  <span className="stat-label">Total Likes</span>
+                </div>
+              </div>
             </div>
-          ))
-        ) : (
-          <div className="empty-state">
-            <Heart size={48} />
-            <p>{activeTab === "recipes" ? "No recipes yet" : "No liked recipes yet"}</p>
           </div>
+        </div>
+
+        <div className="profile-tabs">
+          <button
+            className={`tab-btn ${activeTab === "recipes" ? "active" : ""}`}
+            onClick={() => setActiveTab("recipes")}
+          >
+            <Grid size={18} />
+            Recipes
+          </button>
+
+          {isOwnProfile && (
+            <button
+              className={`tab-btn ${activeTab === "liked" ? "active" : ""}`}
+              onClick={() => setActiveTab("liked")}
+            >
+              <Heart size={18} />
+              Liked
+            </button>
+          )}
+        </div>
+
+        <div className="profile-recipes-grid">
+          {displayedRecipes.length > 0 ? (
+            displayedRecipes.map((recipe) => (
+              <div
+                key={recipe.id}
+                className="recipe-grid-item"
+                onClick={() => handleRecipeClick(recipe)}
+                style={{ cursor: "pointer", position: "relative" }}
+              >
+                <img
+                  src={recipe.imageUrl || "/placeholder.svg"}
+                  alt={recipe.title}
+                  onError={(e) => {
+                    e.target.src = "/placeholder.svg"
+                  }}
+                />
+                <div className="recipe-overlay">
+                  <span className="recipe-title">{recipe.title}</span>
+                  <span className="recipe-likes">
+                    <Heart size={16} fill="white" />
+                    {recipe.likesCount || 0}
+                  </span>
+                </div>
+
+                {isOwnProfile && activeTab === "recipes" && (
+                  <button
+                    className="recipe-delete-btn"
+                    onClick={(e) => handleDeleteRecipe(e, recipe.id)}
+                    title="Delete recipe"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="empty-state">
+              <Heart size={48} />
+              <p>{activeTab === "recipes" ? "No recipes yet" : "No liked recipes yet"}</p>
+            </div>
         )}
       </div>
     </div>
+    </>
   )
 }
 

@@ -602,3 +602,75 @@ exports.getMyLikedRecipes = async (req, res) => {
     return res.status(500).json({ message: "Error fetching liked recipes" })
   }
 }
+
+const { Op } = require("sequelize")
+
+// GET /api/recipes/stories
+exports.getTopRecipesStories = async (req, res) => {
+  try {
+    const userId = req.user?.id || null
+
+    // 1) Top recipes by COUNT(*) on RecipeLike
+    const topLiked = await db.RecipeLike.findAll({
+      attributes: [
+        "recipeId",
+        [db.sequelize.fn("COUNT", db.sequelize.col("recipeId")), "likesCount"],
+      ],
+      group: ["recipeId"],
+      order: [[db.sequelize.fn("COUNT", db.sequelize.col("recipeId")), "DESC"]],
+      limit: 12,
+      raw: true,
+    })
+
+    if (!topLiked.length) return res.json([])
+
+    const recipeIds = topLiked.map((r) => r.recipeId)
+
+    // 2) Fetch recipes
+    const recipes = await db.Recipe.findAll({
+      where: { id: { [Op.in]: recipeIds } },
+      include: [
+        { model: db.User, as: "author", attributes: ["id", "username", "avatarUrl"] },
+        { model: db.Ingredient, as: "ingredients", attributes: ["id", "name"], through: { attributes: ["quantity"] } },
+        { model: db.RecipeTry, as: "tries", attributes: ["id"] },
+      ],
+    })
+
+    // 3) likes map
+    const likesCountMap = {}
+    topLiked.forEach((r) => {
+      likesCountMap[r.recipeId] = parseInt(r.likesCount, 10) || 0
+    })
+
+    // 4) likedByMe
+    let likedByMeSet = new Set()
+    if (userId) {
+      const myLikes = await db.RecipeLike.findAll({
+        where: {
+          userId,
+          recipeId: { [Op.in]: recipeIds },
+        },
+        attributes: ["recipeId"],
+        raw: true,
+      })
+      likedByMeSet = new Set(myLikes.map((l) => l.recipeId))
+    }
+
+    // 5) transform + sort
+    const transformed = recipes
+      .map((recipe) => {
+        const json = recipe.toJSON()
+        const likesCount = likesCountMap[json.id] || 0
+        return {
+          ...transformRecipe(json, likesCount),
+          likedByMe: userId ? likedByMeSet.has(json.id) : false,
+        }
+      })
+      .sort((a, b) => b.likesCount - a.likesCount)
+
+    return res.json(transformed)
+  } catch (err) {
+    console.error("Error fetching stories recipes:", err)
+    return res.status(500).json({ message: "Error fetching stories recipes" })
+  }
+}

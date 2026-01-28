@@ -439,3 +439,17 @@ export const sendChatMessage = async (message) => {
     throw error
   }
 }
+
+// ==================== STORY ENDPOINTS ====================
+export const fetchTopRecipeStories = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/recipes/stories`, {
+      headers: getAuthHeaders(), // authOptional => ok même sans token
+    })
+    if (!response.ok) throw new Error("Failed to fetch stories recipes")
+    return await response.json()
+  } catch (error) {
+    console.error("Error fetching stories recipes:", error)
+    throw error
+  }
+}

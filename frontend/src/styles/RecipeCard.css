@@ -116,6 +116,8 @@
 
 .recipe-info {
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .likes-count {
@@ -126,11 +128,12 @@
 }
 
 .recipe-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 0.5rem 0;
+  display: block;
+  opacity: 1;
+  visibility: visible;
+  color: #111827 !important;
 }
+
 
 .recipe-description {
   font-size: 0.9rem;
@@ -353,3 +356,5 @@
     padding: 0.75rem;
   }
 }
+
+

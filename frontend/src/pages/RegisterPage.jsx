@@ -186,10 +186,6 @@ function RegisterPage() {
             <img src="https://www.google.com/favicon.ico" alt="Google" />
             Google
           </button>
-          <button className="social-btn facebook">
-            <img src="https://www.facebook.com/favicon.ico" alt="Facebook" />
-            Facebook
-          </button>
         </div>
 
         <p className="auth-footer">

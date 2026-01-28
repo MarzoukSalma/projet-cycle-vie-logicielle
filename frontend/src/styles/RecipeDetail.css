@@ -118,6 +118,27 @@
   border-color: var(--primary);
 }
 
+/* ✅ COMMENTS "active": garder le background normal, border + texte orange */
+.detail-action-btn.active {
+  background: var(--background);
+  border-color: #eb980a;
+  color: #eb980a;
+}
+
+.detail-action-btn.active svg {
+  color: #eb980a;
+}
+
+.detail-action-btn.active:hover {
+  background: var(--background);
+  border-color: #d97706;
+  color: #d97706;
+}
+
+.detail-action-btn.active:hover svg {
+  color: #d97706;
+}
+
 .recipe-meta-info {
   display: flex;
   gap: 2rem;
@@ -235,7 +256,10 @@
   font-size: 1.05rem;
 }
 
-/* Added comment section styles */
+/* ===============================
+   COMMENTS SECTION
+   =============================== */
+
 .comments-section {
   border-top: 2px solid var(--border);
   padding-top: 2rem;
@@ -308,7 +332,7 @@
 
 .comment-item:hover {
   border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(228, 18, 18, 0.1);
 }
 
 .comment-avatar {
@@ -331,9 +355,9 @@
 
 .comment-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .comment-author {
@@ -393,10 +417,6 @@
 
 .comments-section-detail .comment-author:hover .comment-name {
   color: var(--primary);
-}
-
-.comments-section-detail .comment-emoji {
-  font-size: 1.25rem;
 }
 
 .comments-section-detail .comment-name {
@@ -546,10 +566,80 @@
   color: var(--text-secondary);
 }
 
-.detail-action-btn.active {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
+/* Avatar large */
+.author-avatar-large {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 0.5rem;
+}
+
+/* ===============================
+   Edit / Delete buttons (no border by default)
+   =============================== */
+
+.detail-action-btn.edit-btn,
+.detail-action-btn.delete-btn {
+  border-color: transparent !important;
+}
+
+/* Edit */
+.detail-action-btn.edit-btn {
+  color: #3b82f6;
+}
+
+.detail-action-btn.edit-btn:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #1d4ed8 !important;
+}
+
+.detail-action-btn.edit-btn:active {
+  border-color: #1d4ed8 !important;
+}
+
+/* Delete */
+.detail-action-btn.delete-btn {
+  color: #ef4444;
+}
+
+.detail-action-btn.delete-btn:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #dc2626 !important;
+}
+
+.detail-action-btn.delete-btn:active {
+  border-color: #dc2626 !important;
+}
+
+.detail-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Delete comment */
+.comment-delete-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.comment-delete-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.comment-delete-btn:active {
+  transform: scale(0.95);
 }
 
 @media (max-width: 768px) {
@@ -582,7 +672,6 @@
     gap: 1rem;
   }
 
-  /* Added mobile styles for comments */
   .comment-form {
     padding: 0.75rem;
   }
@@ -621,72 +710,4 @@
     width: 36px;
     height: 36px;
   }
-  
-}
-
-.author-avatar-large {
-  width: 100px;        /* tu peux ajuster selon ton design */
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-right: 0.5rem;
-}
-
-/* Edit button styling */
-.detail-action-btn.edit-btn {
-  color: #3b82f6;
-  border-color: #3b82f6;
-}
-
-.detail-action-btn.edit-btn:hover {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #1d4ed8;
-}
-
-/* Delete button styling */
-.detail-action-btn.delete-btn {
-  color: #ef4444;
-  border-color: #ef4444;
-}
-
-.detail-action-btn.delete-btn:hover:not(:disabled) {
-  background: #fef2f2;
-  color: #dc2626;
-  border-color: #dc2626;
-}
-
-.detail-action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Comment section styling */
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.comment-delete-btn {
-  background: none;
-  border: none;
-  color: #ef4444;
-  cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.comment-delete-btn:hover {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.comment-delete-btn:active {
-  transform: scale(0.95);
 }

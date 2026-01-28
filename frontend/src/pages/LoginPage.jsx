@@ -8,10 +8,13 @@ import "../styles/Auth.css"
 function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
+
+  const [rememberMe, setRememberMe] = useState(true) // ✅ par défaut ON (comme beaucoup d’apps)
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
@@ -19,23 +22,36 @@ function LoginPage() {
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }))
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }))
+    if (errors.general) setErrors((prev) => ({ ...prev, general: "" }))
   }
 
   const validateForm = () => {
     const newErrors = {}
-    if (!formData.email) {
-      newErrors.email = "Email is required"
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email"
-    }
-    if (!formData.password) {
-      newErrors.password = "Password is required"
-    }
+
+    if (!formData.email) newErrors.email = "Email is required"
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Please enter a valid email"
+
+    if (!formData.password) newErrors.password = "Password is required"
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
+  }
+
+  const persistAuth = (user, token, remember) => {
+    // ✅ Clean old storage to avoid conflicts
+    localStorage.removeItem("user")
+    localStorage.removeItem("authToken")
+    sessionStorage.removeItem("user")
+    sessionStorage.removeItem("authToken")
+
+    if (remember) {
+      localStorage.setItem("user", JSON.stringify(user))
+      localStorage.setItem("authToken", token)
+    } else {
+      sessionStorage.setItem("user", JSON.stringify(user))
+      sessionStorage.setItem("authToken", token)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -46,24 +62,24 @@ function LoginPage() {
     try {
       const response = await loginUser(formData.email, formData.password)
 
-      console.log("✅ Login response:", response)
+      if (!response?.token) throw new Error("No token received from server")
+      if (!response?.user) throw new Error("No user data received from server")
 
-      // ✅ Validate response has both user and token
-      if (!response.token) {
-        throw new Error("No token received from server")
-      }
+      // ✅ Store based on rememberMe
+      persistAuth(response.user, response.token, rememberMe)
 
-      if (!response.user) {
-        throw new Error("No user data received from server")
-      }
-
-      // ✅ Pass BOTH user data AND token to login
+      // ✅ Update AuthContext (it uses localStorage)
+      // If rememberMe is false, we still call login so the session works now,
+      // but after refresh it won't auto-login (expected).
       login(response.user, response.token)
 
       navigate("/")
     } catch (error) {
       console.error("❌ Login error:", error)
-      setErrors({ general: error.message || "Login failed. Please try again." })
+      setErrors((prev) => ({
+        ...prev,
+        general: error.message || "Login failed. Please try again.",
+      }))
     } finally {
       setIsLoading(false)
     }
@@ -100,6 +116,7 @@ function LoginPage() {
                 value={formData.email}
                 onChange={handleChange}
                 className={errors.email ? "error" : ""}
+                autoComplete="email"
               />
             </div>
             {errors.email && <span className="error-message">{errors.email}</span>}
@@ -117,8 +134,14 @@ function LoginPage() {
                 value={formData.password}
                 onChange={handleChange}
                 className={errors.password ? "error" : ""}
+                autoComplete="current-password"
               />
-              <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
@@ -127,9 +150,14 @@ function LoginPage() {
 
           <div className="form-options">
             <label className="checkbox-label">
-              <input type="checkbox" />
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
               <span>Remember me</span>
             </label>
+
             <Link to="/forgot-password" className="forgot-link">
               Forgot password?
             </Link>
@@ -145,13 +173,9 @@ function LoginPage() {
         </div>
 
         <div className="social-buttons">
-          <button className="social-btn google">
+          <button className="social-btn google" type="button">
             <img src="https://www.google.com/favicon.ico" alt="Google" />
             Google
-          </button>
-          <button className="social-btn facebook">
-            <img src="https://www.facebook.com/favicon.ico" alt="Facebook" />
-            Facebook
           </button>
         </div>
 

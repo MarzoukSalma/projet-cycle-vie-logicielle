@@ -1,25 +1,27 @@
-
-
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import TrendingCard from "./TrendingCard"
-import { fetchRecipes } from "../services/api"
+import { fetchTopRecipeStories } from "../services/api"
 import "../styles/TrendingStories.css"
 
 const TrendingStories = () => {
   const [trendingRecipes, setTrendingRecipes] = useState([])
   const [isLoading, setIsLoading] = useState(true)
-  const [scrollPosition, setScrollPosition] = useState(0)
-  const scrollContainer = React.useRef(null)
+
+  const scrollContainerRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
     const loadTrendingRecipes = async () => {
       try {
         setIsLoading(true)
-        const data = await fetchRecipes({ limit: 10, sort: "likesCount", order: "DESC" })
-        setTrendingRecipes(data)
+
+        // ✅ Backend returns top liked recipes already sorted DESC
+        const data = await fetchTopRecipeStories()
+
+        // ✅ keep only 10 for the carousel (optional)
+        setTrendingRecipes(Array.isArray(data) ? data.slice(0, 10) : [])
       } catch (err) {
         console.error("Failed to load trending recipes:", err)
         setTrendingRecipes([])
@@ -32,16 +34,12 @@ const TrendingStories = () => {
   }, [])
 
   const scroll = (direction) => {
-    const container = scrollContainer.current
-    const scrollAmount = 300
+    const container = scrollContainerRef.current
+    if (!container) return
 
-    if (direction === "left") {
-      container.scrollBy({ left: -scrollAmount, behavior: "smooth" })
-      setScrollPosition(Math.max(0, scrollPosition - scrollAmount))
-    } else {
-      container.scrollBy({ left: scrollAmount, behavior: "smooth" })
-      setScrollPosition(scrollPosition + scrollAmount)
-    }
+    const scrollAmount = 300
+    const left = direction === "left" ? -scrollAmount : scrollAmount
+    container.scrollBy({ left, behavior: "smooth" })
   }
 
   const handleRecipeClick = (recipe) => {
@@ -57,8 +55,8 @@ const TrendingStories = () => {
     )
   }
 
-  if (trendingRecipes.length === 0) {
-    return null // Don't show section if no trending recipes
+  if (!trendingRecipes || trendingRecipes.length === 0) {
+    return null
   }
 
   return (
@@ -66,17 +64,31 @@ const TrendingStories = () => {
       <h2 className="section-title">Trending Stories</h2>
 
       <div className="carousel-container">
-        <button className="carousel-btn carousel-btn-left" onClick={() => scroll("left")}>
+        <button
+          type="button"
+          className="carousel-btn carousel-btn-left"
+          onClick={() => scroll("left")}
+          aria-label="Scroll left"
+        >
           <ChevronLeft size={24} />
         </button>
 
-        <div className="carousel" ref={scrollContainer}>
+        <div className="carousel" ref={scrollContainerRef}>
           {trendingRecipes.map((story) => (
-            <TrendingCard key={story.id} story={story} onClick={() => handleRecipeClick(story)} />
+            <TrendingCard
+              key={story.id}
+              story={story}
+              onClick={() => handleRecipeClick(story)}
+            />
           ))}
         </div>
 
-        <button className="carousel-btn carousel-btn-right" onClick={() => scroll("right")}>
+        <button
+          type="button"
+          className="carousel-btn carousel-btn-right"
+          onClick={() => scroll("right")}
+          aria-label="Scroll right"
+        >
           <ChevronRight size={24} />
         </button>
       </div>
