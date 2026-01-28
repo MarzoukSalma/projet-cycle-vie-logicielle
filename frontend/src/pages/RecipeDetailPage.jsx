@@ -225,17 +225,21 @@ const handleLike = async () => {
     }
   }
 
-  const handleDeleteComment = async (commentId) => {
-    if (window.confirm("Are you sure you want to delete this comment?")) {
-      try {
-        await deleteRecipeTry(recipeId, commentId)
-        setComments(comments.filter((c) => c.id !== commentId))
-      } catch (err) {
-        console.error("Failed to delete comment:", err)
-        alert("Failed to delete comment. Please try again.")
-      }
-    }
+  const handleDeleteComment = async (tryId) => {
+  if (!window.confirm("Are you sure you want to delete this comment?")) return
+
+  try {
+    await deleteRecipeTry(recipeId, tryId)
+
+    // IMPORTANT: en Sequelize c'est souvent "id", pas "tryId"
+    setComments((prev) => prev.filter((c) => c.id !== tryId))
+  } catch (err) {
+    console.error("Failed to delete comment:", err)
+    alert("Failed to delete comment. Please try again.")
   }
+  }
+
+
 
   const handleEditRecipe = () => {
     navigate(`/recipe/${recipeId}/edit`, { state: { recipe } })

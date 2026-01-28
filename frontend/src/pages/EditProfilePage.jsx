@@ -8,7 +8,7 @@ import "../styles/EditProfile.css"
 
 function EditProfilePage() {
   const navigate = useNavigate()
-  const { user: currentUser, login } = useAuth()
+  const { user: currentUser, updateUser } = useAuth()
 
   const [formData, setFormData] = useState({
     username: "",
@@ -119,7 +119,7 @@ function EditProfilePage() {
 
       // IMPORTANT: Update auth context with new user data
       if (response.user && typeof response.user === 'object') {
-        login(response.user)
+        updateUser(response.user)
       } else {
         console.error("❌ Invalid user object received:", response.user)
       }

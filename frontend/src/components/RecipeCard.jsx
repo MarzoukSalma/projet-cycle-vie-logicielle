@@ -1,14 +1,15 @@
-
 import { useState, useEffect } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { Heart, MessageCircle, Share2, Bookmark, Send, ImageIcon, X } from "lucide-react"
+import { Heart, MessageCircle, Share2, Bookmark, Send, ImageIcon, X, Trash2 } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
-import { getRecipeTries, createRecipeTry } from "../services/api"
+import { getRecipeTries, createRecipeTry, deleteRecipeTry, likeRecipe, unlikeRecipe } from "../services/api"
+
 import "../styles/RecipeCard.css"
 
 function RecipeCard({ recipe, onToggleLike }) {
   const navigate = useNavigate()
   const { user } = useAuth()
+
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [comments, setComments] = useState([])
@@ -17,10 +18,14 @@ function RecipeCard({ recipe, onToggleLike }) {
   const [commentImagePreview, setCommentImagePreview] = useState(null)
   const [isLoadingComments, setIsLoadingComments] = useState(false)
 
-const likesCount = recipe.likesCount || 0
-const isLiked = recipe.likedByMe || false
+  const [isLikedLocal, setIsLikedLocal] = useState(recipe.likedByMe || false)
+  const [likesLocal, setLikesLocal] = useState(recipe.likesCount || 0)
 
-console.log("Recipe ID:", recipe.id, "likedByMe:", recipe.likedByMe, "isLiked:", isLiked) // 🔍 Debug line
+useEffect(() => {
+  setIsLikedLocal(recipe.likedByMe || false)
+  setLikesLocal(recipe.likesCount || 0)
+}, [recipe.likedByMe, recipe.likesCount])
+
 
   // Load comment count on component mount
   useEffect(() => {
@@ -54,12 +59,18 @@ console.log("Recipe ID:", recipe.id, "likedByMe:", recipe.likedByMe, "isLiked:",
     }
     loadFullComments()
   }, [showComments, recipe.id])
+  
+  useEffect(() => {
+  if (!user) {
+    setIsLikedLocal(false)
+  }
+}, [user])
+
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0]
     if (file) {
       try {
-        // Compress image before upload
         const compressedImage = await compressImage(file)
         setCommentImage(compressedImage)
         setCommentImagePreview(compressedImage)
@@ -138,6 +149,18 @@ console.log("Recipe ID:", recipe.id, "likedByMe:", recipe.likedByMe, "isLiked:",
     }
   }
 
+  const handleDeleteComment = async (tryId) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) return
+
+    try {
+      await deleteRecipeTry(recipe.id, tryId)
+      setComments((prev) => prev.filter((c) => c.id !== tryId))
+    } catch (err) {
+      console.error("Failed to delete comment:", err)
+      alert("Failed to delete comment. Please try again.")
+    }
+  }
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -163,20 +186,49 @@ console.log("Recipe ID:", recipe.id, "likedByMe:", recipe.likedByMe, "isLiked:",
     return recipe.user || recipe.author || {}
   }
 
-  const handleLike = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!user) {
-      alert("Please log in to like recipes")
-      return
-    }
-   onToggleLike(recipe.id, isLiked)
+  const handleLike = async (e) => {
+  e.preventDefault()
+  e.stopPropagation()
 
+  if (!user) {
+    alert("Please log in to like recipes")
+    return
   }
+
+  // ✅ optimistic UI (rouge direct)
+  const prevLiked = isLikedLocal
+  const prevLikes = likesLocal
+
+  setIsLikedLocal(!prevLiked)
+  setLikesLocal(prevLiked ? Math.max(0, prevLikes - 1) : prevLikes + 1)
+
+  try {
+    if (prevLiked) {
+      const data = await unlikeRecipe(recipe.id)
+      // si ton backend renvoie likesCount / likedByMe, synchronise:
+      if (typeof data.likesCount === "number") setLikesLocal(data.likesCount)
+      if (typeof data.likedByMe === "boolean") setIsLikedLocal(data.likedByMe)
+    } else {
+      const data = await likeRecipe(recipe.id)
+      if (typeof data.likesCount === "number") setLikesLocal(data.likesCount)
+      if (typeof data.likedByMe === "boolean") setIsLikedLocal(data.likedByMe)
+    }
+
+    // Optionnel: prévenir le parent pour mettre à jour la liste globale
+    if (onToggleLike) onToggleLike(recipe.id)
+  } catch (err) {
+    // rollback si erreur
+    setIsLikedLocal(prevLiked)
+    setLikesLocal(prevLikes)
+    console.error("Failed to toggle like:", err)
+  }
+}
+
 
   const totalTime = (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0)
   const duration =
     totalTime > 0 ? `${totalTime} mins` : recipe.totalTimeMinutes ? `${recipe.totalTimeMinutes} mins` : "N/A"
+  const isLikedDisplayed = user ? isLikedLocal : false
 
   return (
     <div className="recipe-card">
@@ -205,9 +257,10 @@ console.log("Recipe ID:", recipe.id, "likedByMe:", recipe.likedByMe, "isLiked:",
       />
 
       <div className="recipe-actions">
-        <button className={`action-btn ${isLiked ? "liked" : ""}`} onClick={handleLike}>
-          <Heart size={24} fill={isLiked ? "currentColor" : "none"} />
+        <button className={`action-btn ${isLikedDisplayed ? "liked" : ""}`} onClick={handleLike}>
+          <Heart size={24} fill={isLikedDisplayed ? "currentColor" : "none"} />
         </button>
+
         <button className={`action-btn ${showComments ? "active" : ""}`} onClick={() => setShowComments(!showComments)}>
           <MessageCircle size={24} />
           {comments.length > 0 && <span className="comment-count">{comments.length}</span>}
@@ -229,7 +282,7 @@ console.log("Recipe ID:", recipe.id, "likedByMe:", recipe.likedByMe, "isLiked:",
 
       <div className="recipe-info">
         <p className="likes-count">
-          {likesCount} {likesCount === 1 ? "like" : "likes"}
+            {likesLocal} {likesLocal === 1 ? "like" : "likes"}
         </p>
         {recipe.title && (
           <h4 className="recipe-title" onClick={handleRecipeClick} style={{ cursor: "pointer" }}>
@@ -249,14 +302,31 @@ console.log("Recipe ID:", recipe.id, "likedByMe:", recipe.likedByMe, "isLiked:",
             ) : (
               comments.map((comment) => (
                 <div key={comment.id} className="comment">
-                  <Link to={`/profile/${comment.user?.id || comment.userId}`} className="comment-author">
-<img
-  src={comment.user?.avatarUrl || "/placeholder-avatar.svg"}
-  alt={comment.user?.username || "User avatar"}
-  className="comment-avatar"
-/>
-                    <span className="comment-name">{comment.user?.username || "Unknown"}</span>
-                  </Link>
+                  <div className="comment-header">
+                    <Link to={`/profile/${comment.user?.id || comment.userId}`} className="comment-author">
+                      <img
+                        src={comment.user?.avatarUrl || "/placeholder-avatar.svg"}
+                        alt={comment.user?.username || "User avatar"}
+                        className="comment-avatar"
+                      />
+                      <span className="comment-name">{comment.user?.username || "Unknown"}</span>
+                    </Link>
+
+                    {user && user.id === comment.userId && (
+                      <button
+                        className="comment-delete-btn"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleDeleteComment(comment.id)
+                        }}
+                        title="Delete comment"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+
                   {comment.commentText && <p className="comment-text">{comment.commentText}</p>}
                   {comment.imageUrl && (
                     <img

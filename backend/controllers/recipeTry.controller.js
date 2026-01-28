@@ -80,27 +80,22 @@ exports.deleteRecipeTry = async (req, res) => {
     const { recipeId, tryId } = req.params;
     const userId = req.user.id;
 
-    const recipeTry = await RecipeTry.findByPk(tryId);
+    const recipeTry = await RecipeTry.findOne({
+      where: { id: tryId, recipeId }
+    });
+
     if (!recipeTry) {
-      return res.status(404).json({ message: "Comment not found" });
+      return res.status(404).json({ message: "Comment not found for this recipe" });
     }
 
     if (recipeTry.userId !== userId) {
       return res.status(403).json({ message: "You can only delete your own comments" });
     }
 
-    if (recipeTry.recipeId !== parseInt(recipeId)) {
-      return res.status(400).json({ message: "Comment does not belong to this recipe" });
-    }
-
     await recipeTry.destroy();
-
     return res.json({ message: "Comment deleted successfully" });
   } catch (err) {
     console.error("Error deleting comment:", err);
-    return res.status(500).json({
-      message: "Error deleting comment",
-      error: err.message,
-    });
+    return res.status(500).json({ message: "Error deleting comment", error: err.message });
   }
 };

@@ -11,6 +11,7 @@ router.get("/", optionalAuth, recipeController.getAllRecipes)
 
 // IMPORTANT: place this before `/:id` so "my" is not interpreted as an id
 router.get("/my", authenticateToken, recipeController.getMyRecipes);
+router.get("/liked", authenticateToken, recipeController.getMyLikedRecipes)
 
 // Get single recipe (public)
 router.get("/:id",optionalAuth, recipeController.getRecipeById);
@@ -27,7 +28,6 @@ router.put("/:id", authenticateToken, recipeController.updateRecipe);
 
 // Delete (only owner — controller checks ownership)
 router.delete("/:id", authenticateToken, recipeController.deleteRecipe);
-router.get("/liked", authenticateToken, recipeController.getMyLikedRecipes)
 
 
 module.exports = router;

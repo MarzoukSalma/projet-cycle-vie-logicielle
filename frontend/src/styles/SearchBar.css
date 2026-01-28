@@ -145,9 +145,9 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0.25rem 0.5rem 0.25rem 0.75rem;
-  background: var(--primary);
-  color: white;
-  border-radius: 1rem;
+  background: rgba(245, 158, 11, 0.18); /* ou var(--background) */
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   font-size: 0.875rem;
 }
 
@@ -157,8 +157,8 @@
   justify-content: center;
   background: none;
   border: none;
-  color: white;
-  opacity: 0.7;
+  color: var(--text-primary) !important;
+  opacity: 0.75;
   cursor: pointer;
   padding: 0;
 }

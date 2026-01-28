@@ -544,20 +544,61 @@ exports.getMyRecipes = async (req, res) => {
   }
 }
 // GET /api/recipes/liked
+// GET /api/recipes/liked
 exports.getMyLikedRecipes = async (req, res) => {
   try {
     const userId = req.user.id
 
-    const likes = await RecipeLike.findAll({
+    // 1) Likes rows
+    const likes = await db.RecipeLike.findAll({
       where: { userId },
-      attributes: ["id", "recipeId", "createdAt"],
+      attributes: ["recipeId"],
+      raw: true,
     })
 
-    return res.json(likes)
+    const likedIds = likes.map((l) => l.recipeId)
+    if (likedIds.length === 0) return res.json([])
+
+    // 2) Fetch recipes
+    const recipes = await db.Recipe.findAll({
+      where: { id: likedIds },
+      include: [
+        { model: db.User, as: "author", attributes: ["id", "username", "avatarUrl", "email"] },
+        { model: Ingredient, as: "ingredients", attributes: ["id", "name"], through: { attributes: ["quantity"] } },
+        { model: db.RecipeTry, as: "tries", attributes: ["id"] },
+      ],
+      order: [["createdAt", "DESC"]],
+    })
+
+    // 3) likes count for these recipes
+    const likesCountMap = {}
+    const allLikes = await db.RecipeLike.findAll({
+      where: { recipeId: likedIds },
+      attributes: [
+        "recipeId",
+        [db.sequelize.fn("COUNT", db.sequelize.col("recipeId")), "count"],
+      ],
+      group: ["recipeId"],
+      raw: true,
+    })
+
+    allLikes.forEach((row) => {
+      likesCountMap[row.recipeId] = parseInt(row.count, 10)
+    })
+
+    // 4) transform + likedByMe true
+    const transformed = recipes.map((r) => {
+      const json = r.toJSON()
+      const likesCount = likesCountMap[json.id] || 0
+      return {
+        ...transformRecipe(json, likesCount),
+        likedByMe: true,
+      }
+    })
+
+    return res.json(transformed)
   } catch (err) {
     console.error("Error fetching liked recipes:", err)
-    return res.status(500).json({
-      message: "Error fetching liked recipes",
-    })
+    return res.status(500).json({ message: "Error fetching liked recipes" })
   }
 }

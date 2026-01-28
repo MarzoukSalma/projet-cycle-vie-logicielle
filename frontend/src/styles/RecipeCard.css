@@ -316,6 +316,26 @@
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
+.comment-delete-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.comment-delete-btn:hover {
+  color: #e53935; /* red on hover */
+  transform: scale(1.1);
+}
+
+.comment-delete-btn:active {
+  transform: scale(0.95);
+}
 
 .login-prompt p {
   margin: 0;

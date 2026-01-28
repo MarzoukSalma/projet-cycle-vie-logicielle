@@ -1,81 +1,95 @@
-
 import { useState, useEffect } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
-import { Settings, Grid, Bookmark, Heart, Calendar, Edit2, Trash2 } from "lucide-react"
+import { Settings, Grid, Heart, Calendar, Edit2, Trash2 } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
-import { getUserById, getUserRecipes, deleteRecipe } from "../services/api"
+import { getUserById, getUserRecipes, deleteRecipe, getMyLikedRecipes } from "../services/api"
 import "../styles/Profile.css"
 
 function ProfilePage() {
   const { userId } = useParams()
   const navigate = useNavigate()
   const { user: currentUser } = useAuth()
+
   const [activeTab, setActiveTab] = useState("recipes")
   const [isFollowing, setIsFollowing] = useState(false)
   const [user, setUser] = useState(null)
   const [userStats, setUserStats] = useState({ totalRecipes: 0, totalLikes: 0 })
-  const [recipes, setRecipes] = useState([])
+
+  // ✅ Separate lists
+  const [myRecipes, setMyRecipes] = useState([])
+  const [likedRecipes, setLikedRecipes] = useState([])
+
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const isOwnProfile = !userId || (currentUser && userId == currentUser.id)
 
+  // Load profile + user's recipes (for "recipes" tab)
   useEffect(() => {
-  const loadData = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
+    const loadData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
 
-      // 🔍 DEBUG: Vérifions les valeurs
-      console.log("=== ProfilePage Debug ===")
-      console.log("userId from params:", userId)
-      console.log("currentUser:", currentUser)
-      console.log("currentUser?.id:", currentUser?.id)
-      console.log("isOwnProfile:", isOwnProfile)
+        const profileUser = userId ? await getUserById(userId) : currentUser
 
-      // Load user profile
-      const profileUser = userId ? await getUserById(userId) : currentUser
-      
-      console.log("profileUser:", profileUser)
-      console.log("profileUser?.id:", profileUser?.id)
+        if (!profileUser || !profileUser.id) {
+          throw new Error("User ID is missing")
+        }
 
-      if (!profileUser || !profileUser.id) {
-        throw new Error("User ID is missing")
+        setUser(profileUser)
+
+        const recipesData = await getUserRecipes(profileUser.id)
+
+        if (recipesData.recipes) {
+          setMyRecipes(recipesData.recipes)
+          setUserStats({
+            totalRecipes: recipesData.totalRecipes || 0,
+            totalLikes: recipesData.totalLikes || 0,
+          })
+        } else if (Array.isArray(recipesData)) {
+          setMyRecipes(recipesData)
+          setUserStats({
+            totalRecipes: recipesData.length,
+            totalLikes: recipesData.reduce((sum, r) => sum + (r.likesCount || 0), 0),
+          })
+        } else {
+          setMyRecipes([])
+          setUserStats({ totalRecipes: 0, totalLikes: 0 })
+        }
+      } catch (err) {
+        console.error("Failed to load profile:", err)
+        setError("Failed to load profile")
+      } finally {
+        setIsLoading(false)
       }
-
-      setUser(profileUser)
-
-      // Load user recipes
-      const recipesData = await getUserRecipes(profileUser.id)
-
-      // Check if response has recipes array or is the array itself
-      if (recipesData.recipes) {
-        setRecipes(recipesData.recipes)
-        setUserStats({
-          totalRecipes: recipesData.totalRecipes || 0,
-          totalLikes: recipesData.totalLikes || 0,
-        })
-      } else if (Array.isArray(recipesData)) {
-        setRecipes(recipesData)
-        setUserStats({
-          totalRecipes: recipesData.length,
-          totalLikes: recipesData.reduce((sum, r) => sum + (r.likesCount || 0), 0),
-        })
-      }
-    } catch (err) {
-      console.error("Failed to load profile:", err)
-      setError("Failed to load profile")
-    } finally {
-      setIsLoading(false)
     }
-  }
 
-  if (currentUser || userId) {
-    loadData()
-  } else {
-    console.log("⚠️ No currentUser and no userId - cannot load profile")
-  }
-}, [userId, currentUser])
+    if (currentUser || userId) {
+      loadData()
+    }
+  }, [userId, currentUser])
+
+  // Load liked recipes when tab = liked (only for own profile)
+  useEffect(() => {
+    const loadLiked = async () => {
+      if (!isOwnProfile) return
+      if (activeTab !== "liked") return
+
+      try {
+        const liked = await getMyLikedRecipes()
+        setLikedRecipes(Array.isArray(liked) ? liked : [])
+      } catch (e) {
+        console.error("Failed to load liked recipes:", e)
+        setLikedRecipes([])
+      }
+    }
+
+    loadLiked()
+  }, [activeTab, isOwnProfile])
+
+  const displayedRecipes = activeTab === "liked" ? likedRecipes : myRecipes
+
   const handleRecipeClick = (recipe) => {
     navigate(`/recipe/${recipe.id}`, { state: { recipe } })
   }
@@ -86,8 +100,8 @@ function ProfilePage() {
 
     try {
       await deleteRecipe(recipeId)
-      setRecipes(recipes.filter((r) => r.id !== recipeId))
-      setUserStats({ ...userStats, totalRecipes: userStats.totalRecipes - 1 })
+      setMyRecipes((prev) => prev.filter((r) => r.id !== recipeId))
+      setUserStats((prev) => ({ ...prev, totalRecipes: Math.max(0, prev.totalRecipes - 1) }))
     } catch (err) {
       console.error("Failed to delete recipe:", err)
       alert("Failed to delete recipe. Please try again.")
@@ -123,11 +137,7 @@ function ProfilePage() {
                 e.target.src = "/placeholder.svg"
               }}
             />
-            {isOwnProfile && (
-              <button className="edit-avatar-btn">
-                <Edit2 size={16} />
-              </button>
-            )}
+            
           </div>
 
           <div className="profile-details">
@@ -169,10 +179,6 @@ function ProfilePage() {
                 <span className="stat-value">{userStats.totalLikes}</span>
                 <span className="stat-label">Total Likes</span>
               </div>
-              <div className="stat-item">
-                <span className="stat-value">0</span>
-                <span className="stat-label">Following</span>
-              </div>
             </div>
           </div>
         </div>
@@ -186,17 +192,21 @@ function ProfilePage() {
           <Grid size={18} />
           Recipes
         </button>
+
         {isOwnProfile && (
-          <button className={`tab-btn ${activeTab === "saved" ? "active" : ""}`} onClick={() => setActiveTab("saved")}>
-            <Bookmark size={18} />
-            Saved
+          <button
+            className={`tab-btn ${activeTab === "liked" ? "active" : ""}`}
+            onClick={() => setActiveTab("liked")}
+          >
+            <Heart size={18} />
+            Liked
           </button>
         )}
       </div>
 
       <div className="profile-recipes-grid">
-        {recipes.length > 0 ? (
-          recipes.map((recipe) => (
+        {displayedRecipes.length > 0 ? (
+          displayedRecipes.map((recipe) => (
             <div
               key={recipe.id}
               className="recipe-grid-item"
@@ -217,7 +227,8 @@ function ProfilePage() {
                   {recipe.likesCount || 0}
                 </span>
               </div>
-              {isOwnProfile && (
+
+              {isOwnProfile && activeTab === "recipes" && (
                 <button
                   className="recipe-delete-btn"
                   onClick={(e) => handleDeleteRecipe(e, recipe.id)}
@@ -230,8 +241,8 @@ function ProfilePage() {
           ))
         ) : (
           <div className="empty-state">
-            <Bookmark size={48} />
-            <p>{activeTab === "recipes" ? "No recipes yet" : "No saved recipes yet"}</p>
+            <Heart size={48} />
+            <p>{activeTab === "recipes" ? "No recipes yet" : "No liked recipes yet"}</p>
           </div>
         )}
       </div>

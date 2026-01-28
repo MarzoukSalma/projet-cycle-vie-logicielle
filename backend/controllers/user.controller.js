@@ -1,5 +1,5 @@
 const db = require("../models");
-const { Recipe, Ingredient, RecipeIngredient ,User } = db;
+const { Recipe, Ingredient, RecipeIngredient, User, RecipeLike } = db;
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -223,7 +223,7 @@ exports.getVisitedUserProfile = async (req, res) => {
 //GET /api/recipes/user/:id
 exports.getVisitedUserRecipes = async (req, res) => {
   try {
-    const { id: userId } = req.params;
+    const { id: userId } = req.params
 
     const recipes = await Recipe.findAll({
       where: { userId },
@@ -236,27 +236,52 @@ exports.getVisitedUserRecipes = async (req, res) => {
         },
       ],
       order: [["createdAt", "DESC"]],
-    });
+    })
 
-    const totalRecipes = recipes.length;
+    const totalRecipes = recipes.length
+    const recipeIds = recipes.map((r) => r.id)
 
-    const totalLikes = recipes.reduce(
-      (sum, recipe) => sum + (recipe.likesCount || 0),
-      0
-    );
+    // ✅ Likes count map (ONE QUERY)
+    const likesCountMap = {}
+
+    if (recipeIds.length > 0) {
+      const allLikes = await RecipeLike.findAll({
+        where: { recipeId: recipeIds },
+        attributes: [
+          "recipeId",
+          [db.sequelize.fn("COUNT", db.sequelize.col("recipeId")), "count"],
+        ],
+        group: ["recipeId"],
+        raw: true,
+      })
+
+      allLikes.forEach((row) => {
+        likesCountMap[row.recipeId] = parseInt(row.count, 10)
+      })
+    }
+
+    // ✅ attach likesCount to each recipe
+    const recipesWithLikes = recipes.map((r) => {
+      const json = r.toJSON()
+      return {
+        ...json,
+        likesCount: likesCountMap[json.id] || 0,
+      }
+    })
+
+    const totalLikes = recipesWithLikes.reduce((sum, r) => sum + (r.likesCount || 0), 0)
 
     return res.json({
       totalRecipes,
       totalLikes,
-      recipes,
-    });
+      recipes: recipesWithLikes,
+    })
   } catch (err) {
-    console.error("Error fetching visited user recipes:", err);
-    return res.status(500).json({
-      message: "Error fetching user recipes",
-    });
+    console.error("Error fetching visited user recipes:", err)
+    return res.status(500).json({ message: "Error fetching user recipes" })
   }
-};
+}
+
 
 // POST /api/users/forgot-password
 exports.forgotPassword = async (req, res) => {

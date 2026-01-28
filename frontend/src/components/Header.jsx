@@ -13,16 +13,7 @@ function Header() {
         <div className="header-actions">
           {user ? (
             <>
-              <button className="icon-btn" title="Notifications">
-                <Bell size={24} />
-                <span className="notification-badge">3</span>
-              </button>
-              <button className="icon-btn" title="Bookmarks">
-                <Bookmark size={24} />
-              </button>
-              <Link to="/profile" className="profile-btn">
-                <img src="/diverse-user-avatars.png" alt="Profile" />
-              </Link>
+              
             </>
           ) : (
             <div className="auth-links">

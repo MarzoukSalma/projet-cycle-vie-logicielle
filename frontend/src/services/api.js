@@ -170,7 +170,9 @@ export const resetPassword = async (token, newPassword) => {
 
 export const fetchRecipes = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/recipes`)
+    const response = await fetch(`${API_BASE_URL}/recipes`, {
+      headers: getAuthHeaders(), // ✅ IMPORTANT
+    })
     if (!response.ok) throw new Error("Failed to fetch recipes")
     return await response.json()
   } catch (error) {
@@ -178,6 +180,7 @@ export const fetchRecipes = async () => {
     throw error
   }
 }
+
 
 export const getMyRecipes = async () => {
   try {
@@ -289,6 +292,15 @@ export const unlikeRecipe = async (recipeId) => {
   return data
 }
 
+export const getMyLikedRecipes = async () => {
+  const response = await fetch(`${API_BASE_URL}/recipes/liked`, {
+    headers: getAuthHeaders(),
+  })
+  if (!response.ok) throw new Error("Failed to fetch liked recipes")
+  return response.json()
+}
+
+
 
 // ==================== INGREDIENT ENDPOINTS ====================
 
@@ -319,7 +331,9 @@ export const searchIngredients = async (query) => {
 export const getRecipeTries = async (recipeId) => {
   try {
     console.log("[v0] Fetching recipe tries for recipeId:", recipeId)
- const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}/tries`);
+const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}/tries`, {
+  headers: getAuthHeaders(),
+})
      console.log("[v0] Response status:", response.status)
 
     if (!response.ok) {
@@ -385,15 +399,16 @@ export const deleteRecipeTry = async (recipeId, tryId) => {
 // ==================== SEARCH ENDPOINTS ====================
 
 export const globalSearch = async (query) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`)
-    if (!response.ok) throw new Error("Failed to search")
-    return await response.json()
-  } catch (error) {
-    console.error("Error searching:", error)
-    throw error
+  const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`)
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    console.error("Search error payload:", data)
+    throw new Error(data.message || "Failed to search")
   }
+  return data
 }
+
 
 export const searchByIngredients = async (ingredients) => {
   try {

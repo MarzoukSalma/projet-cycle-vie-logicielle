@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react"
 import RecipeCard from "./RecipeCard"
 import { fetchRecipes, likeRecipe, unlikeRecipe } from "../services/api"
+import { useAuth } from "../contexts/AuthContext"
 import "../styles/RecipeFeed.css"
 
 function RecipeFeed() {
+  const { authVersion } = useAuth()
+
   const [recipes, setRecipes] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -14,8 +17,7 @@ function RecipeFeed() {
         setIsLoading(true)
         setError(null)
         const data = await fetchRecipes()
-        console.log("[v0] Loaded recipes:", data)
-        setRecipes(data)
+        setRecipes(Array.isArray(data) ? data : [])
       } catch (err) {
         console.error("Failed to load recipes:", err)
         setError("Failed to load recipes")
@@ -25,41 +27,57 @@ function RecipeFeed() {
     }
 
     loadRecipes()
-  }, [])
+  }, [authVersion])
 
   const toggleLike = async (recipeId) => {
     const recipe = recipes.find((r) => r.id === recipeId)
     if (!recipe) return
 
-    const isCurrentlyLiked = recipe.isLiked || false
+    const isCurrentlyLiked = recipe.likedByMe || false
 
-    setRecipes(
-      recipes.map((r) =>
+    // ✅ optimistic UI update
+    setRecipes((prev) =>
+      prev.map((r) =>
         r.id === recipeId
           ? {
               ...r,
-              isLiked: !isCurrentlyLiked,
-              likesCount: isCurrentlyLiked ? (r.likesCount || 1) - 1 : (r.likesCount || 0) + 1,
+              likedByMe: !isCurrentlyLiked,
+              likesCount: isCurrentlyLiked
+                ? Math.max(0, (r.likesCount || 0) - 1)
+                : (r.likesCount || 0) + 1,
             }
           : r,
       ),
     )
 
     try {
-      if (isCurrentlyLiked) {
-        await unlikeRecipe(recipeId)
-      } else {
-        await likeRecipe(recipeId)
-      }
-    } catch (err) {
-      console.error("Failed to toggle like:", err)
-      setRecipes(
-        recipes.map((r) =>
+      const data = isCurrentlyLiked ? await unlikeRecipe(recipeId) : await likeRecipe(recipeId)
+
+      // ✅ sync with backend truth
+      setRecipes((prev) =>
+        prev.map((r) =>
           r.id === recipeId
             ? {
                 ...r,
-                isLiked: isCurrentlyLiked,
-                likesCount: isCurrentlyLiked ? (r.likesCount || 0) + 1 : (r.likesCount || 1) - 1,
+                likedByMe: typeof data.likedByMe === "boolean" ? data.likedByMe : !isCurrentlyLiked,
+                likesCount: typeof data.likesCount === "number" ? data.likesCount : r.likesCount,
+              }
+            : r,
+        ),
+      )
+    } catch (err) {
+      console.error("Failed to toggle like:", err)
+
+      // ✅ rollback
+      setRecipes((prev) =>
+        prev.map((r) =>
+          r.id === recipeId
+            ? {
+                ...r,
+                likedByMe: isCurrentlyLiked,
+                likesCount: isCurrentlyLiked
+                  ? (r.likesCount || 0) + 1
+                  : Math.max(0, (r.likesCount || 0) - 1),
               }
             : r,
         ),
@@ -90,7 +108,13 @@ function RecipeFeed() {
       <h2 className="section-title">Latest Recipes</h2>
       <div className="recipes-list">
         {recipes.length > 0 ? (
-          recipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} onToggleLike={toggleLike} />)
+          recipes.map((recipe) => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              onToggleLike={toggleLike}
+            />
+          ))
         ) : (
           <div className="empty-state">No recipes found</div>
         )}

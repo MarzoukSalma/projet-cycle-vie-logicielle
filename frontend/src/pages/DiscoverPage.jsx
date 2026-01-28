@@ -54,39 +54,33 @@ function DiscoverPage() {
         setIsSearching(false)
       }
     } else if (searchData.type === "ingredient") {
-      if (!searchData.ingredients || searchData.ingredients.length === 0) {
-        setSearchResults(null)
-        setSearchInfo(null)
-        return
-      }
-
-      try {
-        setIsSearching(true)
-        // Search for recipes containing the selected ingredients
-        const data = await searchByIngredients(searchData.ingredients)
-        const recipesWithIngredients = data.recipesWithIngredient || []
-        
-        // Filter to get recipes that contain at least one of the selected ingredients
-        const filteredRecipes = recipesWithIngredients.filter((recipe) => {
-          if (!recipe.ingredients || recipe.ingredients.length === 0) return false
-          return recipe.ingredients.some((ing) =>
-            searchData.ingredients.some((selected) => 
-              selected.toLowerCase() === ing.name.toLowerCase()
-            ),
-          )
-        })
-
-        setSearchResults(filteredRecipes)
-        setSearchInfo({ type: "ingredient", ingredients: searchData.ingredients })
-      } catch (err) {
-        console.error("Search failed:", err)
-        setSearchResults([])
-        setSearchInfo({ type: "ingredient", ingredients: searchData.ingredients })
-      } finally {
-        setIsSearching(false)
-      }
-    }
+  if (!searchData.ingredients || searchData.ingredients.length === 0) {
+    setSearchResults(null)
+    setSearchInfo(null)
+    return
   }
+
+  try {
+    setIsSearching(true)
+
+    // ✅ envoie "tomate oeuf"
+    const query = searchData.ingredients.join(" ")
+    const data = await globalSearch(query)
+
+    // ✅ backend renvoie les recettes qui contiennent TOUS les ingrédients
+    const results = data.recipesWithAllIngredients || []
+
+    setSearchResults(results)
+    setSearchInfo({ type: "ingredient", ingredients: searchData.ingredients })
+  } catch (err) {
+    console.error("Search failed:", err)
+    setSearchResults([])
+    setSearchInfo({ type: "ingredient", ingredients: searchData.ingredients })
+  } finally {
+    setIsSearching(false)
+  }
+  }
+}
 
 const toggleLike = async (recipeId, isCurrentlyLiked) => {
   // 🔥 Optimistic update (instant UI feedback)

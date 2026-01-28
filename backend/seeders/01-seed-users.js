@@ -15,7 +15,7 @@ module.exports = {
       {
         id: uuidv4(),
         username: 'chef_marie',
-        email: 'bebaf64454@gamintor.com',
+        email: 'marie@example.com',
         passwordHash: hashedPassword,
         avatarUrl: 'https://i.pravatar.cc/150?img=1',
         bio: 'Passionnée de cuisine française traditionnelle. J\'adore partager mes recettes de famille.',
