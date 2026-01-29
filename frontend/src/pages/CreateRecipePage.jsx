@@ -266,14 +266,17 @@ function CreateRecipePage() {
                 <Clock size={16} />
                 Prep Time (min)
               </label>
-              <input
-                type="number"
-                id="prepTime"
-                name="prepTime"
-                placeholder="30"
-                value={formData.prepTime}
-                onChange={handleChange}
-              />
+             <input
+  type="number"
+  id="prepTime"
+  name="prepTime"
+  placeholder="30"
+  value={formData.prepTime}
+  min="0"
+  step="1"
+  onKeyDown={(e) => e.key === "-" && e.preventDefault()}
+  onChange={handleChange}
+/>
             </div>
 
             <div className="form-group">
@@ -281,14 +284,18 @@ function CreateRecipePage() {
                 <ChefHat size={16} />
                 Cook Time (min)
               </label>
-              <input
-                type="number"
-                id="cookTime"
-                name="cookTime"
-                placeholder="45"
-                value={formData.cookTime}
-                onChange={handleChange}
-              />
+             <input
+  type="number"
+  id="cookTime"
+  name="cookTime"
+  placeholder="45"
+  value={formData.cookTime}
+  min="0"
+  step="1"
+  onKeyDown={(e) => e.key === "-" && e.preventDefault()}
+  onChange={handleChange}
+/>
+
             </div>
 
             <div className="form-group">
@@ -296,14 +303,18 @@ function CreateRecipePage() {
                 <Users size={16} />
                 Servings
               </label>
-              <input
-                type="number"
-                id="servings"
-                name="servings"
-                placeholder="4"
-                value={formData.servings}
-                onChange={handleChange}
-              />
+             <input
+  type="number"
+  id="servings"
+  name="servings"
+  placeholder="4"
+  value={formData.servings}
+  min="1"
+  step="1"
+  onKeyDown={(e) => e.key === "-" && e.preventDefault()}
+  onChange={handleChange}
+/>
+
             </div>
           </div>
         </div>

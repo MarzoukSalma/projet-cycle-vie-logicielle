@@ -3,7 +3,7 @@ const { Recipe, Ingredient, RecipeIngredient, User, RecipeLike } = db;
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const admin = require('../config/firebase-admin');
-
+const { sendResetPasswordEmail } = require("../utils/sendEmail");
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 // POST /api/users/register
@@ -285,45 +285,47 @@ exports.getVisitedUserRecipes = async (req, res) => {
 
 
 // POST /api/users/forgot-password
+
+
 exports.forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body
+    const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({ message: "Email is required" })
+      return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({ where: { email } })
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
-      // Don't reveal if user exists or not for security
       return res.json({
-        message: "If a user with that email exists, a password reset link has been sent",
-      })
+        message:
+          "If a user with that email exists, a password reset link has been sent",
+      });
     }
 
-    // Generate a reset token (in production, use crypto.randomBytes)
-    const resetToken = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-      expiresIn: "1h",
-    })
+    const resetToken = jwt.sign(
+      { id: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
-    // In production, save this token to database and send email
-    // For now, just return success
-    console.log(`Password reset token for ${email}: ${resetToken}`)
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    await sendResetPasswordEmail(user.email, resetLink);
 
     return res.json({
       message: "Password reset link has been sent to your email",
-      // In production, don't send the token in response
-      resetToken,
-    })
+    });
   } catch (err) {
-    console.error("Error in forgot password:", err)
+    console.error("Error in forgot password:", err);
     return res.status(500).json({
       message: "Error processing password reset request",
       error: err.message,
-    })
+    });
   }
-}
+};
+
 
 // POST /api/users/reset-password
 exports.resetPassword = async (req, res) => {

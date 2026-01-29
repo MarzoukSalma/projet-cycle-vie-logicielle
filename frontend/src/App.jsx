@@ -12,6 +12,7 @@ import RecipeDetailPage from "./pages/RecipeDetailPage"
 import EditRecipePage from "./pages/EditRecipePage"
 import EditProfilePage from "./pages/EditProfilePage"
 import ChatPage from "./pages/ChatPage"
+import ResetPasswordPage from "./pages/ResetPasswordPage"
 import "./App.css"
 
 function App() {
@@ -21,8 +22,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
+         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/discover" element={<DiscoverPage />} />
