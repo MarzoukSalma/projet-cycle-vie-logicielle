@@ -1,37 +1,11 @@
-// server.js
+// backend/index.js
 require("dotenv").config()
 
-const express = require("express")
-const db = require("./models") // Sequelize index.js
-const recipeRoutes = require("./routes/recipe.routes")
-const userRoutes = require("./routes/user.routes")
-const ingredientRoutes = require("./routes/ingredient.routes")
-const recipeTryRoutes = require("./routes/recipeTry.routes")
-const searchRoutes = require("./routes/search.routes")
-const chatRoutes = require("./routes/chat.routes")
-const cors = require("cors")
+const app = require("./app")
+const db = require("./models")
 
-const app = express()
 const PORT = process.env.PORT || 5000
 
-app.use(cors()) 
-
-// Middleware pour lire JSON with increased limit
-app.use(express.json({ limit: "50mb" }))
-app.use(express.urlencoded({ limit: "50mb", extended: true }))
-
-app.get("/", (req, res) => {
-  res.send("RecipeShare backend is runninggg 👨‍🍳🔥")
-})
-
-// Routes pour recipes
-app.use("/api/chat", chatRoutes)
-app.use("/api/recipes", recipeRoutes)
-app.use("/api/ingredients", ingredientRoutes)
-app.use("/api/recipes", recipeTryRoutes) // tries liés aux recettes
-app.use("/api/search", searchRoutes)
-app.use("/api/users", userRoutes)
-// Start server ONLY if DB connection works
 db.sequelize
   .authenticate()
   .then(() => {

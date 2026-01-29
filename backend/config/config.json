@@ -6,6 +6,14 @@
     "database": "recipeshare",
     "host": "db",
     "dialect": "postgres"
+  },
+  "test": {
+    "username": "postgres",
+    "password": "mamapapa123",
+    "database": "recipeshare",
+    "host": "db",
+    "dialect": "postgres",
+    "logging": false
   }
  
 }

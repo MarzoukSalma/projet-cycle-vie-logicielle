@@ -2,6 +2,7 @@ const db = require("../models");
 const { Recipe, Ingredient, RecipeIngredient, User, RecipeLike } = db;
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const admin = require('../config/firebase-admin');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
@@ -363,3 +364,83 @@ exports.resetPassword = async (req, res) => {
     })
   }
 }
+exports.googleAuth = async (req, res) => {
+  try {
+    const { idToken, email, displayName, photoURL } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ message: 'ID token is required' });
+    }
+
+    // Verify the Firebase ID token
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      console.error('❌ Token verification failed:', error);
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+
+    const firebaseUid = decodedToken.uid;
+    console.log('✅ Token verified for Firebase UID:', firebaseUid);
+
+    // Check if user exists by firebaseUid
+    let user = await User.findOne({ where: { firebaseUid } });
+
+    if (!user) {
+      // Check if email already exists (user registered with email/password)
+      const existingUser = await User.findOne({ where: { email: email || decodedToken.email } });
+      
+      if (existingUser) {
+        // Link existing account with Google
+        existingUser.firebaseUid = firebaseUid;
+        existingUser.authProvider = 'google';
+        existingUser.avatarUrl = photoURL || decodedToken.picture || existingUser.avatarUrl;
+        await existingUser.save();
+        user = existingUser;
+        console.log('✅ Linked existing user with Google:', user.id);
+      } else {
+        // Create new user
+        const username = (displayName || decodedToken.name || email?.split('@')[0] || 'user') + Math.floor(Math.random() * 1000);
+        
+        user = await User.create({
+          email: email || decodedToken.email,
+          username: username,
+          firebaseUid: firebaseUid,
+          authProvider: 'google',
+          avatarUrl: photoURL || decodedToken.picture,
+          passwordHash: null, // No password for Google users
+        });
+        console.log('✅ New Google user created:', user.id);
+      }
+    } else {
+      console.log('✅ Existing Google user found:', user.id);
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN || '7d' }
+    );
+
+    const { passwordHash, ...userWithoutPassword } = user.toJSON();
+
+    return res.json({
+      message: 'Google authentication successful',
+      token,
+      user: userWithoutPassword,
+    });
+
+  } catch (err) {
+    console.error('❌ Google auth error:', err);
+    return res.status(500).json({
+      message: 'Error during Google authentication',
+      error: err.message,
+    });
+  }
+};
