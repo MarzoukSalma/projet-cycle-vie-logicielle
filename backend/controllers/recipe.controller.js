@@ -544,7 +544,6 @@ exports.getMyRecipes = async (req, res) => {
   }
 }
 // GET /api/recipes/liked
-// GET /api/recipes/liked
 exports.getMyLikedRecipes = async (req, res) => {
   try {
     const userId = req.user.id

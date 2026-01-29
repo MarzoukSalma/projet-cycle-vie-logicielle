@@ -1,8 +1,10 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+import { signInWithPopup } from "firebase/auth"
 import { useAuth } from "../contexts/AuthContext"
 import { loginUser } from "../services/api"
+import { auth, googleProvider } from "../config/firebase"
 import "../styles/Auth.css"
 
 function LoginPage() {
@@ -65,14 +67,15 @@ function LoginPage() {
       if (!response?.token) throw new Error("No token received from server")
       if (!response?.user) throw new Error("No user data received from server")
 
+
       // ✅ Store based on rememberMe
       persistAuth(response.user, response.token, rememberMe)
 
       // ✅ Update AuthContext (it uses localStorage)
       // If rememberMe is false, we still call login so the session works now,
       // but after refresh it won't auto-login (expected).
-      login(response.user, response.token)
 
+      login(response.user, response.token)
       navigate("/")
     } catch (error) {
       console.error("❌ Login error:", error)
@@ -84,6 +87,58 @@ function LoginPage() {
       setIsLoading(false)
     }
   }
+
+  // Google Sign-In Handler
+const handleGoogleSignIn = async () => {
+  setIsLoading(true)
+  setErrors({})
+  
+  try {
+    const result = await signInWithPopup(auth, googleProvider)
+    const user = result.user
+    
+    console.log("✅ Google sign-in successful:", user)
+    
+    const idToken = await user.getIdToken()
+    
+    // Call your backend
+    const response = await fetch('http://localhost:5000/api/users/google', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        idToken: idToken,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      }),
+    })
+
+    const data = await response.json() // ✅ Get response data first
+    console.log("📥 Backend response:", data) // ✅ Log it
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to authenticate with backend')
+    }
+    
+    login(data.user, data.token)
+    navigate("/")
+    
+  } catch (error) {
+    console.error("❌ Google sign-in error:", error)
+    
+    if (error.code === 'auth/popup-closed-by-user') {
+      setErrors({ general: "Sign-in cancelled" })
+    } else if (error.code === 'auth/popup-blocked') {
+      setErrors({ general: "Popup was blocked. Please allow popups for this site." })
+    } else {
+      setErrors({ general: error.message || "Google sign-in failed. Please try again." })
+    }
+  } finally {
+    setIsLoading(false)
+  }
+}
 
   return (
     <div className="auth-page">
@@ -112,7 +167,7 @@ function LoginPage() {
                 type="email"
                 id="email"
                 name="email"
-                placeholder="Enter your email"
+                placeholder="        Enter your email"
                 value={formData.email}
                 onChange={handleChange}
                 className={errors.email ? "error" : ""}
@@ -130,7 +185,7 @@ function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 id="password"
                 name="password"
-                placeholder="Enter your password"
+                placeholder="        Enter your password"
                 value={formData.password}
                 onChange={handleChange}
                 className={errors.password ? "error" : ""}
@@ -173,7 +228,13 @@ function LoginPage() {
         </div>
 
         <div className="social-buttons">
-          <button className="social-btn google" type="button">
+
+          <button 
+            className="social-btn google" 
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+            type="button"
+          >
             <img src="https://www.google.com/favicon.ico" alt="Google" />
             Google
           </button>

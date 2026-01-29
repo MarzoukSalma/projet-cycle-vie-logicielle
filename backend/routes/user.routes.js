@@ -8,8 +8,6 @@ const { authenticateToken } = require("../middleware/auth");
 router.post("/register", userController.registerUser);
 router.post("/login", userController.loginUser);
 router.post("/google", userController.googleAuth); //Google authetification
-
-
 router.put("/settings", authenticateToken, userController.updateUserSettings);
 
 // Public visited user

@@ -102,10 +102,11 @@
 .input-icon {
   position: absolute;
   left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--text-secondary);
   pointer-events: none;
 }
-
 .input-wrapper input {
   width: 100%;
   padding: 0.875rem 1rem 0.875rem 2.75rem;
@@ -115,7 +116,6 @@
   transition: all 0.2s;
   background: var(--surface);
 }
-
 .input-wrapper input:focus {
   outline: none;
   border-color: var(--primary);
@@ -129,6 +129,8 @@
 .password-toggle {
   position: absolute;
   right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -137,7 +139,6 @@
   display: flex;
   align-items: center;
 }
-
 .password-toggle:hover {
   color: var(--text-primary);
 }

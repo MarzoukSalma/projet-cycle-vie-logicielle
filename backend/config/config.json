@@ -4,14 +4,14 @@
     "username": "postgres",
     "password": "mamapapa123",
     "database": "recipeshare",
-    "host": "db",
+    "host": "localhost",
     "dialect": "postgres"
   },
   "test": {
     "username": "postgres",
     "password": "mamapapa123",
     "database": "recipeshare",
-    "host": "db",
+    "host": "localhost",
     "dialect": "postgres",
     "logging": false
   }
