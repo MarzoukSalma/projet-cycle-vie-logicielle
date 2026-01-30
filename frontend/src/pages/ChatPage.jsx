@@ -1,99 +1,102 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import '../styles/ChatPage.css'
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import "../styles/ChatPage.css";
 
 function ChatPage() {
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const messagesEndRef = useRef(null)
-  const { user } = useAuth()
-  const navigate = useNavigate()
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const messagesEndRef = useRef(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Redirect if not authenticated
   useEffect(() => {
     if (!user) {
-      navigate('/')
+      navigate("/");
     }
-  }, [user, navigate])
+  }, [user, navigate]);
 
   // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSendMessage = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (!input.trim()) return
+    if (!input.trim()) return;
 
-    const userMessageContent = input.trim()
-    
+    const userMessageContent = input.trim();
+
     // Add user message to UI
-    const userMessage = { role: 'user', content: userMessageContent }
-    setMessages((prev) => [...prev, userMessage])
-    setInput('')
-    setError('')
-    setLoading(true)
+    const userMessage = { role: "user", content: userMessageContent };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setError("");
+    setLoading(true);
 
     try {
-      // Get the token from localStorage
-      const token = localStorage.getItem('authToken')
-      
+      const token = localStorage.getItem("authToken");
+
       if (!token) {
-        throw new Error('No authentication token found. Please log in again.')
+        throw new Error("No authentication token found. Please log in again.");
       }
 
-      // Call the backend API directly (no api.js needed)
-      const response = await fetch('http://localhost:5000/api/chat', {
-        method: 'POST',
+      // --- CORRECTION ICI ---
+      // 1. On récupère l'URL depuis les variables d'environnement
+      // Si on est en local, on utilise localhost:5000 par défaut
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+      // 2. On construit l'URL complète
+      // Attention: Assure-toi que ta variable Vercel ne finit PAS par un slash '/'
+      const response = await fetch(`${API_URL}/api/chat`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: userMessageContent })
-      })
+        body: JSON.stringify({ message: userMessageContent }),
+      });
+      // ----------------------
 
-      // Parse the response
-      const data = await response.json()
+      const data = await response.json();
 
-      // Check if the response was successful
       if (!response.ok) {
-        throw new Error(data.message || `Server error: ${response.status}`)
+        throw new Error(data.message || `Server error: ${response.status}`);
       }
 
-      // Check if we got a reply
       if (!data.reply) {
-        throw new Error('No response received from the assistant')
+        throw new Error("No response received from the assistant");
       }
-      
-      // Add AI response to UI
-      const aiMessage = { role: 'assistant', content: data.reply }
-      setMessages((prev) => [...prev, aiMessage])
-      
+
+      const aiMessage = { role: "assistant", content: data.reply };
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (err) {
-      console.error('Chat error:', err)
-      setError(err.message || 'Failed to send message. Please try again.')
-      
-      // If authentication error, redirect to login
-      if (err.message.includes('authentication') || err.message.includes('token')) {
+      console.error("Chat error:", err);
+      setError(err.message || "Failed to send message. Please try again.");
+
+      if (
+        err.message.includes("authentication") ||
+        err.message.includes("token")
+      ) {
         setTimeout(() => {
-          navigate('/login')
-        }, 2000)
+          navigate("/login");
+        }, 2000);
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleClearChat = () => {
-    setMessages([])
-    setError('')
-  }
+    setMessages([]);
+    setError("");
+  };
 
-  if (!user) return null
+  if (!user) return null;
 
   return (
     <div className="chat-page-container">
@@ -102,8 +105,8 @@ function ChatPage() {
           <h1>Food Assistant Chat</h1>
           <p>Ask me about recipes, ingredients, and meal ideas!</p>
         </div>
-        <button 
-          className="clear-chat-btn" 
+        <button
+          className="clear-chat-btn"
           onClick={handleClearChat}
           disabled={messages.length === 0 || loading}
         >
@@ -116,14 +119,17 @@ function ChatPage() {
           <div className="empty-state">
             <div className="empty-state-icon">🍽️</div>
             <h2>Start a conversation!</h2>
-            <p>Ask me about recipes, meal planning, ingredients, or food suggestions</p>
+            <p>
+              Ask me about recipes, meal planning, ingredients, or food
+              suggestions
+            </p>
           </div>
         ) : (
           <div className="chat-messages">
             {messages.map((msg, idx) => (
               <div key={idx} className={`message ${msg.role}`}>
                 <div className="message-avatar">
-                  {msg.role === 'user' ? (
+                  {msg.role === "user" ? (
                     <span className="avatar-user">👤</span>
                   ) : (
                     <span className="avatar-assistant">🤖</span>
@@ -170,17 +176,17 @@ function ChatPage() {
             className="chat-input"
             autoFocus
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading || !input.trim()}
             className="send-btn"
           >
-            {loading ? '⏳' : '📤'}
+            {loading ? "⏳" : "📤"}
           </button>
         </div>
       </form>
     </div>
-  )
+  );
 }
 
-export default ChatPage
+export default ChatPage;
