@@ -42,7 +42,8 @@ function ChatPage() {
       const token = localStorage.getItem("authToken");
 
       if (!token) {
-        throw new Error("No authentication token found. Please log in again.");
+        navigate("/login");
+        return;
       }
 
       // --- CORRECTION ICI ---
@@ -61,6 +62,14 @@ function ChatPage() {
         body: JSON.stringify({ message: userMessageContent }),
       });
       // ----------------------
+
+      const contentType = response.headers.get("content-type");
+
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("HTML reçu :", text);
+        throw new Error("Invalid server response");
+      }
 
       const data = await response.json();
 
