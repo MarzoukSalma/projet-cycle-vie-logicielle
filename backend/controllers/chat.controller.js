@@ -6,7 +6,6 @@ const { ChatMessage } = require("../models"); // optional, remove if you don’t
 // POST /api/chat
 exports.chatWithFoodAssistant = async (req, res) => {
   try {
-    const userId = req.user.id;
     const { message } = req.body;
 
     if (!message || message.trim().length === 0) {
@@ -39,7 +38,6 @@ Keep responses friendly and conversational.
     const reply = completion.choices[0].message.content;
 
     // (Optional) Save conversation
-    
 
     return res.json({
       reply,
