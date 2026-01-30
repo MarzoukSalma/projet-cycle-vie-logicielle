@@ -3,6 +3,6 @@ const router = express.Router();
 const { chatWithFoodAssistant } = require("../controllers/chat.controller");
 const { authenticateToken } = require("../middleware/auth");
 
-router.post("/", authenticateToken, chatWithFoodAssistant);
+router.post("/", chatWithFoodAssistant);
 
 module.exports = router;
