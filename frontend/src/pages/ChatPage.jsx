@@ -51,9 +51,11 @@ function ChatPage() {
       // Si on est en local, on utilise localhost:5000 par défaut
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+      console.log("🔍 API_URL utilisée:", API_URL); // ← Ajoutez cette ligne
+
       // 2. On construit l'URL complète
       // Attention: Assure-toi que ta variable Vercel ne finit PAS par un slash '/'
-      const response = await fetch(`${API_URL}/api/chat`, {
+      const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
