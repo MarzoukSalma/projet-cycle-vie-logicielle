@@ -29,3 +29,10 @@ Déploiement : Railway & Vercel
 
 Projet organisé en sprints hebdomadaires, suivant les approches Agile, Scrum et DevOps, avec une livraison continue de versions fonctionnelles.
 Architecture client–serveur assurant performance, sécurité et évolutivité.
+# Documents du projet
+
+Les documents liés au projet (rapport, présentation, etc.) sont disponibles via le lien suivant :
+
+🔗 Lien Google Drive : [insérer ici le lien]
+
+
