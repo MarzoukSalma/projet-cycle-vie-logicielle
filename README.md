@@ -13,7 +13,7 @@ Découverte de recettes tendances
 Recherche par nom ou par ingrédients
 
 Assistant intelligent pour proposer des idées de plats
-# Architecture & technologies
+### Architecture & technologies
 
 Frontend : React.js
 
@@ -25,11 +25,11 @@ Authentification : Firebase
 
 Déploiement : Railway & Vercel
 
-# Méthodologie
+### Méthodologie
 
 Projet organisé en sprints hebdomadaires, suivant les approches Agile, Scrum et DevOps, avec une livraison continue de versions fonctionnelles.
 Architecture client–serveur assurant performance, sécurité et évolutivité.
-# Documents du projet
+### Documents du projet
 
 Les documents liés au projet (rapport, présentation, etc.) sont disponibles via le lien suivant :
 
