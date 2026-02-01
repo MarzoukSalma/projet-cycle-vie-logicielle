@@ -10,7 +10,7 @@ Gestion du profil et des recettes
 
 Découverte de recettes tendances
 
-Recherche par nom ou par ingrédients
+Recherche de recettes par nom ou par ingrédients
 
 Assistant intelligent pour proposer des idées de plats
 ### Architecture & technologies
